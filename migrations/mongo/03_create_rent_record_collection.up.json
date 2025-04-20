@@ -1,0 +1,20 @@
+[
+    {
+        "createIndexes": "rent_records",
+        "indexes": [
+            {
+                "key": {
+                    "rent_id": 1,
+                    "status": 1
+                },
+                "name": "rent_id_rent_record_status"
+            },
+            {
+                "key": {
+                    "created_at": -1
+                },
+                "name": "created_at_asc"
+            }
+        ]
+    }
+]

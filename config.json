@@ -1,0 +1,9 @@
+{
+    "env": "development",
+    "mongo": {
+        "uri": "mongodb://localhost:27017",
+        "database": "mydatabase",
+        "authSource": "admin",
+        "timeout_in_seconds": 30
+    }
+}

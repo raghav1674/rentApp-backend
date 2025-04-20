@@ -1,0 +1,27 @@
+[
+    {
+        "createIndexes": "rents",
+        "indexes": [
+            {
+                "key": {
+                    "landlord.email": 1,
+                    "status": 1
+                },
+                "name": "landlord_email_rent_status"
+            },
+            {
+                "key": {
+                    "tenant.email": 1,
+                    "status": 1
+                },
+                "name": "tenant_email_rent_status"
+            },
+            {
+                "key": {
+                    "created_at": -1
+                },
+                "name": "created_at_asc"
+            }
+        ]
+    }
+]
