@@ -5,5 +5,9 @@
         "database": "mydatabase",
         "authSource": "admin",
         "timeout_in_seconds": 30
+    },
+    "jwt": {
+        "issuer_name": "sample-app",
+        "expiration_in_seconds": 3600
     }
 }

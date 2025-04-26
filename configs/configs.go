@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	Mongo MongoConfig `json:"mongo"`
+	JWT   JWTConfig   `json:"jwt"`
 	Env   string      `json:"env"`
 }
 
@@ -33,6 +34,10 @@ func LoadConfig(configPath string) (*Config, error) {
 		return nil, err
 	}
 
+	if err := cfg.JWT.LoadAndValidate(); err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
 }
 
@@ -42,6 +47,14 @@ func (config *Config) GetMongoConfig() MongoConfig {
 		panic("Config not loaded. Call LoadConfig() first.")
 	}
 	return config.Mongo
+}
+
+// GetJWTConfig returns the JWT configuration
+func (config *Config) GetJWTConfig() JWTConfig {
+	if config == nil {
+		panic("Config not loaded. Call LoadConfig() first.")
+	}
+	return config.JWT
 }
 
 // GetEnv returns the value of the environment

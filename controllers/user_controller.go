@@ -8,7 +8,6 @@ import (
 )
 
 type UserController interface {
-	CreateUser(ctx *gin.Context)
 	GetUserByEmail(ctx *gin.Context)
 	UpdateUser(ctx *gin.Context)
 }
@@ -23,20 +22,36 @@ func NewUserController(userService services.UserService) UserController {
 	}
 }
 
-func (u *userController) CreateUser(ctx *gin.Context) {
-	var userRequestDto dto.UserRequest
-	if err := ctx.ShouldBindJSON(&userRequestDto); err != nil {
-		ctx.JSON(400, gin.H{"error": "Invalid input"})
+// GetUserByEmail implements UserController.
+func (u *userController) GetUserByEmail(ctx *gin.Context) {
+
+	var emailRequest struct {
+		Email string `json:"email" binding:"required,email"`
+	}
+	if err := ctx.ShouldBindJSON(&emailRequest); err != nil {
+		ctx.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
-	createdUser, err := u.userService.CreateUser(userRequestDto)
+
+	user, err := u.userService.GetUserByEmail(ctx, emailRequest.Email)
 	if err != nil {
-		ctx.JSON(500, gin.H{"error": "Failed to create user"})
+		ctx.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	ctx.JSON(201, createdUser)
+	ctx.JSON(200, user)
 }
 
-func (u *userController) GetUserByEmail(ctx *gin.Context) {}
-
-func (u *userController) UpdateUser(ctx *gin.Context) {}
+// UpdateUser implements UserController.
+func (u *userController) UpdateUser(ctx *gin.Context) {
+	var userRequestDto dto.UserRequest
+	if err := ctx.ShouldBindJSON(&userRequestDto); err != nil {
+		ctx.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	user, err := u.userService.UpdateUser(ctx, userRequestDto)
+	if err != nil {
+		ctx.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	ctx.JSON(200, user)
+}

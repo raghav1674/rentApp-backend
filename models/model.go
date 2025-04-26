@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/v2/bson"
+)
 
 type UserRole string
 
@@ -25,34 +29,34 @@ const (
 )
 
 type User struct {
-	Id          string     `bson:"_id,omitempty" json:"id,omitempty"`
-	Email       string     `bson:"email" json:"email"`
-	Password    string     `bson:"password" json:"password"`
-	PhoneNumber string     `bson:"phone_number" json:"phone_number"`
-	Roles       []UserRole `bson:"roles" json:"roles"`
-	CreatedAt   time.Time  `bson:"created_at" json:"created_at"`
-	UpdatedAt   time.Time  `bson:"updated_at" json:"updated_at"`
+	Id          bson.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Email       string        `bson:"email" json:"email"`
+	Password    string        `bson:"password" json:"password"`
+	PhoneNumber string        `bson:"phone_number" json:"phone_number"`
+	Roles       []UserRole    `bson:"roles" json:"roles"`
+	CreatedAt   time.Time     `bson:"created_at" json:"created_at"`
+	UpdatedAt   time.Time     `bson:"updated_at" json:"updated_at"`
 }
 
 type PersonRef struct {
-	Id    string `bson:"_id,omitempty" json:"id,omitempty"`
+	Id    string `bson:"_id,omitempty" json:"_id,omitempty"`
 	Email string `bson:"email" json:"email"`
 }
 
 type Rent struct {
-	Id        string     `bson:"_id,omitempty" json:"id,omitempty"`
-	LandLord  PersonRef  `bson:"landlord" json:"landlord"`
-	Tenant    PersonRef  `bson:"tenant" json:"tenant"`
-	Location  string     `bson:"location" json:"location"`
-	Amount    float64    `bson:"amount" json:"amount"`
-	Schedule  string     `bson:"schedule" json:"schedule"`
-	Status    RentStatus `bson:"status" json:"status"`
-	CreatedAt time.Time  `bson:"created_at" json:"created_at"`
-	UpdatedAt time.Time  `bson:"updated_at" json:"updated_at"`
+	Id        bson.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	LandLord  PersonRef     `bson:"landlord" json:"landlord"`
+	Tenant    PersonRef     `bson:"tenant" json:"tenant"`
+	Location  string        `bson:"location" json:"location"`
+	Amount    float64       `bson:"amount" json:"amount"`
+	Schedule  string        `bson:"schedule" json:"schedule"`
+	Status    RentStatus    `bson:"status" json:"status"`
+	CreatedAt time.Time     `bson:"created_at" json:"created_at"`
+	UpdatedAt time.Time     `bson:"updated_at" json:"updated_at"`
 }
 
 type RentRecord struct {
-	Id          string           `bson:"_id,omitempty" json:"id,omitempty"`
+	Id          bson.ObjectID    `bson:"_id,omitempty" json:"_id,omitempty"`
 	RentId      string           `bson:"rent_id" json:"rent_id"`
 	Amount      float64          `bson:"amount" json:"amount"`
 	SubmittedAt time.Time        `bson:"submitted_at" json:"submitted_at"`

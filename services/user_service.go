@@ -2,14 +2,18 @@ package services
 
 import (
 	"sample-web/dto"
-	"sample-web/models"
+	"sample-web/mappers"
 	"sample-web/repositories"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService interface {
-	CreateUser(userRequestDto dto.UserRequest) (dto.UserResponse, error)
-	GetUserByEmail(email string) (dto.UserResponse, error)
-	UpdateUser(userRequestDto dto.UserRequest) (dto.UserResponse, error)
+	CreateUser(ctx *gin.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error)
+	GetUserByEmail(ctx *gin.Context, email string) (dto.UserResponse, error)
+	UpdateUser(ctx *gin.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error)
 }
 
 type userService struct {
@@ -22,28 +26,42 @@ func NewUserService(userRepo repositories.UserRepository) UserService {
 	}
 }
 
-func (u *userService) CreateUser(userRequestDto dto.UserRequest) (dto.UserResponse, error) {
-	user := models.User{
-		Email:       userRequestDto.Email,
-		Password:    userRequestDto.Password,
-		PhoneNumber: userRequestDto.PhoneNumber,
-	}
-	createdUser, err := u.userRepo.CreateUser(user)
+func (u *userService) CreateUser(ctx *gin.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error) {
+	user := mappers.ToUserModel(userRequestDto)
+	hasedPassword, err := bcrypt.GenerateFromPassword([]byte(userRequestDto.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return dto.UserResponse{}, err
 	}
-	userResponse := dto.UserResponse{
-		Id:          createdUser.Id,
-		Email:       createdUser.Email,
-		PhoneNumber: createdUser.PhoneNumber,
+	user.Password = string(hasedPassword)
+	createdUser, err := u.userRepo.CreateUser(ctx, user)
+	if err != nil {
+		return dto.UserResponse{}, err
 	}
+	userResponse := mappers.ToUserResponse(createdUser)
 	return userResponse, nil
 }
 
-func (u *userService) GetUserByEmail(email string) (dto.UserResponse, error) {
-	panic("unimplemented")
+func (u *userService) GetUserByEmail(ctx *gin.Context, email string) (dto.UserResponse, error) {
+	user, err := u.userRepo.FindUserByEmail(ctx, email)
+	if err != nil {
+		return dto.UserResponse{}, err
+	}
+	userResponse := mappers.ToUserResponse(user)
+	return userResponse, nil
 }
 
-func (u *userService) UpdateUser(userRequestDto dto.UserRequest) (dto.UserResponse, error) {
-	panic("unimplemented")
+func (u *userService) UpdateUser(ctx *gin.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error) {
+	user, err := u.userRepo.FindUserByEmail(ctx, userRequestDto.Email)
+	if err != nil {
+		return dto.UserResponse{}, err
+	}
+	user.PhoneNumber = userRequestDto.PhoneNumber
+	user.Roles = mappers.ToUserRoles(userRequestDto.Roles)
+	user.UpdatedAt = time.Now()
+	updatedUser, err := u.userRepo.UpdateUser(ctx, user)
+	if err != nil {
+		return dto.UserResponse{}, err
+	}
+	userResponse := mappers.ToUserResponse(updatedUser)
+	return userResponse, nil
 }

@@ -15,25 +15,36 @@ const (
 
 func main() {
 
+	// Load configuration
 	appConfigs, err := configs.LoadConfig(configPath)
+	if err != nil {
+		panic(err)
+	}
+	mongoConfig := appConfigs.GetMongoConfig()
+	jwtConfig := appConfigs.GetJWTConfig()
 
+	// Initialize MongoDB client
+	mongoClient, err := clients.NewMongoClient(mongoConfig)
 	if err != nil {
 		panic(err)
 	}
 
-	mongoClient, err := clients.NewMongoClient(appConfigs.GetMongoConfig())
-
-	if err != nil {
-		panic(err)
-	}
+	// Initialize JWT service
+	jwtService := services.NewJWTService(jwtConfig.IssuerName, jwtConfig.SecretKey, jwtConfig.ExpirationInSeconds)
 
 	// Wire up dependencies
+
+	// Initialize the user repository, service, and controller
 	userRepo := repositories.NewUserRepository(mongoClient.Database)
 	userService := services.NewUserService(userRepo)
 	userController := controllers.NewUserController(userService)
 
+	// Initialize the auth service and controller
+	authService := services.NewAuthService(userRepo, jwtService)
+	authController := controllers.NewAuthController(authService)
+
 	// Set up router with all routes
-	r := routes.SetupRouter(userController)
+	r := routes.SetupRouter(userController, authController, jwtService)
 
 	// Start the server
 	r.Run(":8080")
