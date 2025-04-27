@@ -8,19 +8,26 @@ import (
 
 type UserRole string
 
+type RentSchedule string
+
+type RentStatus string
+
+type RentRecordStatus string
+
 const (
 	LandLord UserRole = "landlord"
 	Tenant   UserRole = "tenant"
 )
 
-type RentStatus string
+const (
+	Monthly   RentSchedule = "monthly"
+	BiMonthly RentSchedule = "bimonthly"
+)
 
 const (
 	RentStatusActive   RentStatus = "active"
 	RentStatusInactive RentStatus = "inactive"
 )
-
-type RentRecordStatus string
 
 const (
 	RentRecordStatusPending  RentRecordStatus = "pending"
@@ -39,8 +46,13 @@ type User struct {
 }
 
 type PersonRef struct {
-	Id    string `bson:"_id,omitempty" json:"_id,omitempty"`
-	Email string `bson:"email" json:"email"`
+	Id    bson.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Email string        `bson:"email" json:"email"`
+}
+
+type RentInfo struct {
+	Amount   float64      `bson:"amount" json:"amount"`
+	Schedule RentSchedule `bson:"schedule" json:"schedule"`
 }
 
 type Rent struct {
@@ -49,7 +61,7 @@ type Rent struct {
 	Tenant    PersonRef     `bson:"tenant" json:"tenant"`
 	Location  string        `bson:"location" json:"location"`
 	Amount    float64       `bson:"amount" json:"amount"`
-	Schedule  string        `bson:"schedule" json:"schedule"`
+	Schedule  RentSchedule  `bson:"schedule" json:"schedule"`
 	Status    RentStatus    `bson:"status" json:"status"`
 	CreatedAt time.Time     `bson:"created_at" json:"created_at"`
 	UpdatedAt time.Time     `bson:"updated_at" json:"updated_at"`
@@ -57,7 +69,8 @@ type Rent struct {
 
 type RentRecord struct {
 	Id          bson.ObjectID    `bson:"_id,omitempty" json:"_id,omitempty"`
-	RentId      string           `bson:"rent_id" json:"rent_id"`
+	RentId      bson.ObjectID    `bson:"rent_id" json:"rent_id"`
+	Rent        RentInfo         `bson:"rent" json:"rent"`
 	Amount      float64          `bson:"amount" json:"amount"`
 	SubmittedAt time.Time        `bson:"submitted_at" json:"submitted_at"`
 	ApprovedAt  time.Time        `bson:"approved_at" json:"approved_at"`

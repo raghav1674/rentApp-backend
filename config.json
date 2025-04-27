@@ -1,8 +1,8 @@
 {
     "env": "development",
     "mongo": {
-        "uri": "mongodb://localhost:27017",
-        "database": "mydatabase",
+        "uri": "mongodb+srv://cluster0.wpsfzei.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+        "database": "devdb",
         "authSource": "admin",
         "timeout_in_seconds": 30
     },
