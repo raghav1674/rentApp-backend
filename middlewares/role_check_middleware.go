@@ -1,7 +1,6 @@
 package middlewares
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -9,7 +8,6 @@ import (
 
 func RoleCheckMiddleware(requiredRole string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		fmt.Println(c.Keys)
 		currentRole, exists := c.Get("current_role")
 		if !exists {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Current role not found"})

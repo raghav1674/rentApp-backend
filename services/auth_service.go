@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"sample-web/dto"
 	"sample-web/mappers"
 	"sample-web/models"
@@ -72,7 +71,6 @@ func (a *authService) Register(ctx *gin.Context, registerRequest dto.RegisterReq
 		UpdatedAt:   now,
 	}
 	user, err = a.userRepo.CreateUser(ctx, user)
-	fmt.Println(user)
 	if err != nil {
 		return dto.UserResponse{}, err
 	}

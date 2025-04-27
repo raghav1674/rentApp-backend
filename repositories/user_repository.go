@@ -1,7 +1,6 @@
 package repositories
 
 import (
-	"fmt"
 	"sample-web/models"
 
 	"github.com/gin-gonic/gin"
@@ -31,9 +30,6 @@ func (userRepository *userRepository) CreateUser(ctx *gin.Context, user models.U
 	if err != nil {
 		return models.User{}, err
 	}
-
-	fmt.Println(usersCollection.FindOne(ctx, bson.M{"_id": result.InsertedID}).Decode(&user))
-
 	var createdUser models.User
 
 	err = usersCollection.FindOne(ctx, bson.M{"_id": result.InsertedID}).Decode(&createdUser)
