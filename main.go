@@ -1,6 +1,7 @@
 package main
 
 import (
+	"os"
 	"sample-web/clients"
 	"sample-web/configs"
 	"sample-web/controllers"
@@ -10,12 +11,16 @@ import (
 )
 
 const (
-	configPath = "config.json"
+	defaultConfigPath = "config.json"
 )
 
 func main() {
 
 	// Load configuration
+	configPath := os.Getenv("CONFIG_FILE_PATH")
+	if configPath == "" {
+		configPath = defaultConfigPath
+	}
 	appConfigs, err := configs.LoadConfig(configPath)
 	if err != nil {
 		panic(err)
