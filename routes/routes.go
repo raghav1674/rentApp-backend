@@ -29,8 +29,8 @@ func SetupRouter(
 		{
 			userRoutes := protectedRoutes.Group("/users")
 			{
-				userRoutes.POST("/", userController.GetUserByEmail)
-				userRoutes.PUT("/", userController.UpdateUser)
+				userRoutes.POST("", userController.GetUserByEmail)
+				userRoutes.PUT("", userController.UpdateUser)
 			}
 			landlordRoutes := protectedRoutes.Group("/landlords")
 			landlordRoutes.Use(middlewares.RoleCheckMiddleware(string(models.LandLord)))

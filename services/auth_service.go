@@ -63,6 +63,7 @@ func (a *authService) Register(ctx *gin.Context, registerRequest dto.RegisterReq
 	now := time.Now()
 
 	user := models.User{
+		Name:        registerRequest.Name,
 		Email:       registerRequest.Email,
 		Password:    string(hashedPassword),
 		PhoneNumber: registerRequest.PhoneNumber,

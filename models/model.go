@@ -37,6 +37,7 @@ const (
 
 type User struct {
 	Id          bson.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Name        string        `bson:"name" json:"name"`
 	Email       string        `bson:"email" json:"email"`
 	Password    string        `bson:"password" json:"password"`
 	PhoneNumber string        `bson:"phone_number" json:"phone_number"`

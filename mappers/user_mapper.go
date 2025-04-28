@@ -37,6 +37,7 @@ func ToUserModel(dto dto.UserRequest) models.User {
 func ToUserResponse(model models.User) dto.UserResponse {
 	return dto.UserResponse{
 		Id:          model.Id.Hex(),
+		Name:        model.Name,
 		Email:       model.Email,
 		PhoneNumber: model.PhoneNumber,
 		Roles:       ToUserRolesString(model.Roles),

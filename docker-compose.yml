@@ -3,36 +3,8 @@ services:
   mongo:
     image: mongo
     restart: always
-    networks:
-      - webnet
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
-    volumes:
-      - mongodata:/data/db
     ports:
     - 27017:27017
-
-  rentapp:
-    build: .
-    restart: always
-    networks:
-      - webnet
-    environment:
-      JWT_SECRET_KEY: secret
-      MONGO_USERNAME: example
-      MONGO_PASSWORD: root
-      CONFIG_FILE_PATH: /app/configuration/config.json
-    volumes:
-      - ./config.json:/app/configuration/config.json:ro
-    depends_on:
-      mongo:
-        condition: service_started
-    ports:
-    - 8080:8080
-
-networks:
-  webnet:
-
-volumes:
-  mongodata:
