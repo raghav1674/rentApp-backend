@@ -11,13 +11,6 @@
             },
             {
                 "key": {
-                    "phone_number": 1
-                },
-                "name": "unique_phone_number",
-                "unique": true
-            },
-            {
-                "key": {
                     "created": -1
                 },
                 "name": "created_at_asc"

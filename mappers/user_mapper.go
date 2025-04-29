@@ -7,6 +7,9 @@ import (
 )
 
 func ToUserRoles(roles []string) []models.UserRole {
+	if len(roles) == 0 {
+		roles = []string{string(models.LandLord),string(models.Tenant)}
+	}
 	userRoles := make([]models.UserRole, len(roles))
 	for i, role := range roles {
 		userRoles[i] = models.UserRole(role)

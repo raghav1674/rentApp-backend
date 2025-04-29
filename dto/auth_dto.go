@@ -15,7 +15,7 @@ type RegisterRequest struct {
 	Email       string   `json:"email" binding:"required,email"`
 	Password    string   `json:"password" binding:"required,min=6"`
 	PhoneNumber string   `json:"phone_number"`
-	Roles       []string `json:"roles" binding:"required"`
+	Roles       []string `json:"roles"`
 }
 
 type RefreshTokenRequest struct {

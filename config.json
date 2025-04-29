@@ -2,7 +2,7 @@
     "env": "development",
     "mongo": {
         "uri": "mongodb+srv://cluster0.wpsfzei.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-        "database": "devdb",
+        "database": "devdb1",
         "authSource": "admin",
         "timeout_in_seconds": 30
     },

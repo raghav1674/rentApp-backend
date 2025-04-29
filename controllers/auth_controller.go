@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"sample-web/dto"
 	"sample-web/services"
@@ -40,6 +41,7 @@ func (a *authController) Login(ctx *gin.Context) {
 func (a *authController) Register(ctx *gin.Context) {
 	var registerRequest dto.RegisterRequest
 	if err := ctx.ShouldBindJSON(&registerRequest); err != nil {
+		fmt.Print(registerRequest)
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
