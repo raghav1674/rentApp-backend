@@ -2,29 +2,35 @@ package middlewares
 
 import (
 	"net/http"
+	"sample-web/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
 func RoleCheckMiddleware(requiredRole string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		currentRole, exists := c.Get("current_role")
+	return func(ctx *gin.Context) {
+
+		_, span := utils.Tracer().Start(ctx.Request.Context(), "middlewares.RoleCheckMiddleware")
+		defer span.End()
+
+		currentRole, exists := ctx.Get("current_role")
+
 		if !exists {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Current role not found"})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Current role not found"})
 			return
 		}
 
 		currentRoleStr, ok := currentRole.(string)
 		if !ok {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid role type"})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid role type"})
 			return
 		}
 
 		if currentRoleStr != requiredRole {
-			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized for this role"})
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized for this role"})
 			return
 		}
 
-		c.Next()
+		ctx.Next()
 	}
 }

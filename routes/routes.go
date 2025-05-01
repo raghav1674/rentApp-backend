@@ -24,8 +24,8 @@ func SetupRouter(
 
 		authRoutes := api.Group("/auth")
 		{
-			authRoutes.POST("/login", authController.Login)
 			authRoutes.POST("/register", authController.Register)
+			authRoutes.POST("/login", authController.Login)
 		}
 		protectedRoutes := api.Group("/")
 		protectedRoutes.Use(middlewares.JWTAuthMiddleware(jwtService))

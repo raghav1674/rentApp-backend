@@ -27,14 +27,26 @@ func NewAuthController(authService services.AuthService) AuthController {
 }
 
 func (a *authController) Login(ctx *gin.Context) {
+
+	spanCtx, span := utils.Tracer().Start(ctx.Request.Context(), "AuthController.Register")
+	defer span.End()
+	
+	span.AddEvent("LoginRequestReceived")
+
+
 	var loginRequest dto.LoginRequest
 	if err := ctx.ShouldBindJSON(&loginRequest); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		span.RecordError(err)
+		span.AddEvent("LoginRequestFailed")
+		ctx.Error(errors.NewAppError(http.StatusBadRequest, "invalid request", err))
 		return
 	}
-	token, err := a.authService.Login(ctx, loginRequest)
+
+	token, err := a.authService.Login(spanCtx, loginRequest)
 	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		span.RecordError(err)
+		span.AddEvent("LoginRequestFailed")
+		ctx.Error(errors.NewAppError(http.StatusUnauthorized, "invalid credentials", err))
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"token": token})
@@ -45,6 +57,8 @@ func (a *authController) Register(ctx *gin.Context) {
 	spanCtx, span := utils.Tracer().Start(ctx.Request.Context(), "AuthController.Register")
 	defer span.End()
 
+	span.AddEvent("RegisterRequestReceived")
+
 	var registerRequest dto.RegisterRequest
 	if err := ctx.ShouldBindJSON(&registerRequest); err != nil {
 		span.RecordError(err)
@@ -54,7 +68,7 @@ func (a *authController) Register(ctx *gin.Context) {
 	user, err := a.authService.Register(spanCtx, registerRequest)
 	if err != nil {
 		span.RecordError(err)
-		ctx.Error(errors.NewAppError(http.StatusInternalServerError, "email already registered", err))
+		ctx.Error(errors.NewAppError(http.StatusBadRequest, "email already registered", err))
 		return
 	}
 	span.SetAttributes(

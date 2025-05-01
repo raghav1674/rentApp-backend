@@ -1,19 +1,19 @@
 package services
 
 import (
+	"context"
 	"sample-web/dto"
 	"sample-web/mappers"
 	"sample-web/repositories"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserService interface {
-	CreateUser(ctx *gin.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error)
-	GetUserByEmail(ctx *gin.Context, email string) (dto.UserResponse, error)
-	UpdateUser(ctx *gin.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error)
+	CreateUser(ctx context.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error)
+	GetUserByEmail(ctx context.Context, email string) (dto.UserResponse, error)
+	UpdateUser(ctx context.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error)
 }
 
 type userService struct {
@@ -26,7 +26,7 @@ func NewUserService(userRepo repositories.UserRepository) UserService {
 	}
 }
 
-func (u *userService) CreateUser(ctx *gin.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error) {
+func (u *userService) CreateUser(ctx context.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error) {
 	user := mappers.ToUserModel(userRequestDto)
 	hasedPassword, err := bcrypt.GenerateFromPassword([]byte(userRequestDto.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -41,7 +41,7 @@ func (u *userService) CreateUser(ctx *gin.Context, userRequestDto dto.UserReques
 	return userResponse, nil
 }
 
-func (u *userService) GetUserByEmail(ctx *gin.Context, email string) (dto.UserResponse, error) {
+func (u *userService) GetUserByEmail(ctx context.Context, email string) (dto.UserResponse, error) {
 	user, err := u.userRepo.FindUserByEmail(ctx, email)
 	if err != nil {
 		return dto.UserResponse{}, err
@@ -50,7 +50,7 @@ func (u *userService) GetUserByEmail(ctx *gin.Context, email string) (dto.UserRe
 	return userResponse, nil
 }
 
-func (u *userService) UpdateUser(ctx *gin.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error) {
+func (u *userService) UpdateUser(ctx context.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error) {
 	user, err := u.userRepo.FindUserByEmail(ctx, userRequestDto.Email)
 	if err != nil {
 		return dto.UserResponse{}, err

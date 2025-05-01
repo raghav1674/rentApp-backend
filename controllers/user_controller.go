@@ -1,8 +1,11 @@
 package controllers
 
 import (
+	"net/http"
 	"sample-web/dto"
+	customerr "sample-web/errors"
 	"sample-web/services"
+	"sample-web/utils"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,17 +28,25 @@ func NewUserController(userService services.UserService) UserController {
 // GetUserByEmail implements UserController.
 func (u *userController) GetUserByEmail(ctx *gin.Context) {
 
+	spanCtx,span := utils.Tracer().Start(ctx.Request.Context(), "controllers.UserController.GetUserByEmail")
+	defer span.End()
+
 	var emailRequest struct {
 		Email string `json:"email" binding:"required,email"`
 	}
 	if err := ctx.ShouldBindJSON(&emailRequest); err != nil {
-		ctx.JSON(400, gin.H{"error": err.Error()})
+		span.RecordError(err)
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "Invalid email format",err))
 		return
 	}
 
-	user, err := u.userService.GetUserByEmail(ctx, emailRequest.Email)
+	span.AddEvent("finding user by email")
+
+	user, err := u.userService.GetUserByEmail(spanCtx, emailRequest.Email)
+	
 	if err != nil {
-		ctx.JSON(500, gin.H{"error": err.Error()})
+		span.RecordError(err)
+		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "Error occurred while fetching user information",err))
 		return
 	}
 	ctx.JSON(200, user)

@@ -3,7 +3,7 @@ package dto
 type LoginRequest struct {
 	Email       string `json:"email" binding:"required,email"`
 	Password    string `json:"password" binding:"required"`
-	CurrentRole string `json:"current_role" binding:"required"`
+	CurrentRole string `json:"current_role" binding:"required,oneof=landlord tenant"`
 }
 
 type AuthResponse struct {

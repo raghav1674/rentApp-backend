@@ -10,13 +10,14 @@ import (
 	"sample-web/utils"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService interface {
-	Login(ctx *gin.Context, loginRequest dto.LoginRequest) (dto.AuthResponse, error)
+	Login(ctx context.Context, loginRequest dto.LoginRequest) (dto.AuthResponse, error)
 	Register(ctx context.Context, registerRequest dto.RegisterRequest) (dto.UserResponse, error)
 }
 
@@ -32,12 +33,30 @@ func NewAuthService(userRepo repositories.UserRepository, jwtSrv JWTService) Aut
 	}
 }
 
-func (a *authService) Login(ctx *gin.Context, loginRequest dto.LoginRequest) (dto.AuthResponse, error) {
+func (a *authService) Login(ctx context.Context, loginRequest dto.LoginRequest) (dto.AuthResponse, error) {
+	
+	ctx, span := utils.Tracer().Start(ctx, "AuthService.Login")
+	defer span.End()
+	
+	span.AddEvent("Finding user by email",trace.WithAttributes(
+		attribute.String("email", loginRequest.Email)),
+	)
+
 	user, err := a.userRepo.FindUserByEmail(ctx, loginRequest.Email)
+	
 	if err != nil {
-		return dto.AuthResponse{}, err
+		span.RecordError(err)
+		if errors.Is(err,mongo.ErrNoDocuments){
+			span.AddEvent("User not found")
+			return dto.AuthResponse{}, errors.New("user not found")
+		} else {
+			return dto.AuthResponse{}, err
+		}
 	}
+
+	span.AddEvent("User found, verifying password")
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginRequest.Password)); err != nil {
+		span.AddEvent("Password verification failed")
 		return dto.AuthResponse{}, err
 	}
 
@@ -46,11 +65,15 @@ func (a *authService) Login(ctx *gin.Context, loginRequest dto.LoginRequest) (dt
 		CurrentRole: loginRequest.CurrentRole,
 	}
 
+	span.AddEvent("Generating JWT token")
 	accesToken, err := a.jwtService.GenerateToken(ctx, claims)
 	if err != nil {
+		span.RecordError(err)
+		span.AddEvent("Token generation failed")
 		return dto.AuthResponse{}, err
 	}
 
+	span.AddEvent("Token generated successfully")
 	authResponse := dto.AuthResponse{
 		AccessToken: accesToken,
 	}
