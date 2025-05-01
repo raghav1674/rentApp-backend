@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"os"
 	"sample-web/clients"
 	"sample-web/configs"
@@ -8,6 +9,7 @@ import (
 	"sample-web/repositories"
 	"sample-web/routes"
 	"sample-web/services"
+	"sample-web/utils"
 )
 
 const (
@@ -27,6 +29,10 @@ func main() {
 	}
 	mongoConfig := appConfigs.GetMongoConfig()
 	jwtConfig := appConfigs.GetJWTConfig()
+	tracingConfig := appConfigs.GetTracingConfig()
+
+	shutdown := utils.InitTracer(tracingConfig)
+	defer shutdown(context.Background())
 
 	// Initialize MongoDB client
 	mongoClient, err := clients.NewMongoClient(mongoConfig)
@@ -36,8 +42,6 @@ func main() {
 
 	// Initialize JWT service
 	jwtService := services.NewJWTService(jwtConfig.IssuerName, jwtConfig.SecretKey, jwtConfig.ExpirationInSeconds)
-
-	// Wire up dependencies
 
 	// Initialize the user repository, service, and controller
 	userRepo := repositories.NewUserRepository(mongoClient.Database)

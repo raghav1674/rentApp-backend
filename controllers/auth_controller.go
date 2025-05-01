@@ -1,18 +1,21 @@
 package controllers
 
 import (
-	"fmt"
 	"net/http"
 	"sample-web/dto"
+	"sample-web/errors"
 	"sample-web/services"
+	"sample-web/utils"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 type AuthController interface {
 	Login(ctx *gin.Context)
 	Register(ctx *gin.Context)
 }
+
 type authController struct {
 	authService services.AuthService
 }
@@ -34,21 +37,29 @@ func (a *authController) Login(ctx *gin.Context) {
 		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
 		return
 	}
-
 	ctx.JSON(http.StatusOK, gin.H{"token": token})
 }
 
 func (a *authController) Register(ctx *gin.Context) {
+
+	spanCtx, span := utils.Tracer().Start(ctx.Request.Context(), "AuthController.Register")
+	defer span.End()
+
 	var registerRequest dto.RegisterRequest
 	if err := ctx.ShouldBindJSON(&registerRequest); err != nil {
-		fmt.Print(registerRequest)
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		span.RecordError(err)
+		ctx.Error(errors.NewAppError(http.StatusBadRequest, "invalid request", err))
 		return
 	}
-	user, err := a.authService.Register(ctx, registerRequest)
+	user, err := a.authService.Register(spanCtx, registerRequest)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		span.RecordError(err)
+		ctx.Error(errors.NewAppError(http.StatusInternalServerError, "email already registered", err))
 		return
 	}
+	span.SetAttributes(
+		attribute.String("user_id", user.Id),
+	)
+	span.AddEvent("User registered")
 	ctx.JSON(http.StatusOK, user)
 }

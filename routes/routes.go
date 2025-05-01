@@ -7,6 +7,7 @@ import (
 	"sample-web/services"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 )
 
 func SetupRouter(
@@ -15,6 +16,8 @@ func SetupRouter(
 	jwtService services.JWTService,
 ) *gin.Engine {
 	router := gin.Default()
+	router.Use(otelgin.Middleware("sample-web"))
+	router.Use(middlewares.ErrorHandler())
 
 	api := router.Group("/api/v1")
 	{

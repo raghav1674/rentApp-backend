@@ -1,19 +1,23 @@
 package services
 
 import (
+	"context"
+	"errors"
 	"sample-web/dto"
 	"sample-web/mappers"
 	"sample-web/models"
 	"sample-web/repositories"
+	"sample-web/utils"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService interface {
 	Login(ctx *gin.Context, loginRequest dto.LoginRequest) (dto.AuthResponse, error)
-	Register(ctx *gin.Context, registerRequest dto.RegisterRequest) (dto.UserResponse, error)
+	Register(ctx context.Context, registerRequest dto.RegisterRequest) (dto.UserResponse, error)
 }
 
 type authService struct {
@@ -53,10 +57,32 @@ func (a *authService) Login(ctx *gin.Context, loginRequest dto.LoginRequest) (dt
 	return authResponse, nil
 }
 
-func (a *authService) Register(ctx *gin.Context, registerRequest dto.RegisterRequest) (dto.UserResponse, error) {
+func (a *authService) Register(ctx context.Context, registerRequest dto.RegisterRequest) (dto.UserResponse, error) {
+
+	ctx, span := utils.Tracer().Start(ctx, "AuthService.Register")
+	defer span.End()
+
+	existingUser, err := a.userRepo.FindUserByEmail(ctx, registerRequest.Email)
+
+	if err != nil {
+		if errors.Is(err,mongo.ErrNoDocuments){
+			span.AddEvent("User not found, proceeding with registration")
+		} else {
+			span.RecordError(err)
+			return dto.UserResponse{}, err
+		}
+	}
+
+	if existingUser.Email == registerRequest.Email {
+		return dto.UserResponse{}, errors.New("user already exists")
+	}
+
+	span.AddEvent("Generating password hash")
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(registerRequest.Password), bcrypt.DefaultCost)
+
 	if err != nil {
+		span.RecordError(err)
 		return dto.UserResponse{}, err
 	}
 
@@ -71,10 +97,22 @@ func (a *authService) Register(ctx *gin.Context, registerRequest dto.RegisterReq
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
+	span.AddEvent("Creating user using repository")
+
 	user, err = a.userRepo.CreateUser(ctx, user)
+
 	if err != nil {
+		span.RecordError(err)
 		return dto.UserResponse{}, err
 	}
+
+	span.AddEvent("User created successfully")
+
+	span.AddEvent("Mapping user to response")
+
 	userResponse := mappers.ToUserResponse(user)
+
+	span.AddEvent("User mapped to response successfully")
+
 	return userResponse, nil
 }

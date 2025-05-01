@@ -7,9 +7,10 @@ import (
 )
 
 type Config struct {
-	Mongo MongoConfig `json:"mongo"`
-	JWT   JWTConfig   `json:"jwt"`
-	Env   string      `json:"env"`
+	Mongo   MongoConfig   `json:"mongo"`
+	JWT     JWTConfig     `json:"jwt"`
+	Env     string        `json:"env"`
+	Tracing TracingConfig `json:"tracing"`
 }
 
 func LoadConfig(configPath string) (*Config, error) {
@@ -38,6 +39,10 @@ func LoadConfig(configPath string) (*Config, error) {
 		return nil, err
 	}
 
+	if err := cfg.Tracing.LoadAndValidate(); err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
 }
 
@@ -55,6 +60,14 @@ func (config *Config) GetJWTConfig() JWTConfig {
 		panic("Config not loaded. Call LoadConfig() first.")
 	}
 	return config.JWT
+}
+
+// GetTracingConfig returns the Tracing configuration
+func (config *Config) GetTracingConfig() TracingConfig {
+	if config == nil {
+		panic("Config not loaded. Call LoadConfig() first.")
+	}
+	return config.Tracing
 }
 
 // GetEnv returns the value of the environment
