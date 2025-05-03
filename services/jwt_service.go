@@ -40,13 +40,13 @@ func NewJWTService(issuerName, secretKey string, expirationInSeconds int) JWTSer
 }
 
 func (j *jwtService) GenerateToken(ctx context.Context, customClaims CustomClaims) (string, error) {
-	
+
 	_, span := utils.Tracer().Start(ctx, "JWTService.GenerateToken")
 	defer span.End()
 
 	span.SetAttributes(attribute.String("current_role", customClaims.CurrentRole))
 
-	span.AddEvent("Generating JWT token",trace.WithAttributes(
+	span.AddEvent("Generating JWT token", trace.WithAttributes(
 		attribute.String("email", customClaims.Email),
 		attribute.String("current_role", customClaims.CurrentRole),
 	))
@@ -61,7 +61,7 @@ func (j *jwtService) GenerateToken(ctx context.Context, customClaims CustomClaim
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	
+
 	span.AddEvent("Signing JWT token")
 
 	return token.SignedString([]byte(j.secretKey))

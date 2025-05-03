@@ -28,7 +28,7 @@ func NewUserRepository(db *mongo.Database) UserRepository {
 }
 
 func (userRepository *userRepository) CreateUser(ctx context.Context, user models.User) (models.User, error) {
-	
+
 	ctx, span := utils.Tracer().Start(ctx, "UserRepository.CreateUser")
 	defer span.End()
 
@@ -37,7 +37,7 @@ func (userRepository *userRepository) CreateUser(ctx context.Context, user model
 		attribute.String("operation", "insert_one"),
 		attribute.String("email", user.Email),
 	))
-	
+
 	usersCollection := userRepository.db.Collection("users")
 	_, err := usersCollection.InsertOne(ctx, user)
 	if err != nil {
@@ -46,8 +46,8 @@ func (userRepository *userRepository) CreateUser(ctx context.Context, user model
 		return models.User{}, err
 	}
 
-	span.AddEvent("UserCreated")	
-	
+	span.AddEvent("UserCreated")
+
 	return userRepository.FindUserByEmail(ctx, user.Email)
 }
 
@@ -73,7 +73,7 @@ func (userRepository *userRepository) FindUserByEmail(ctx context.Context, email
 	}
 
 	span.AddEvent("UserFound")
-	
+
 	return user, nil
 }
 

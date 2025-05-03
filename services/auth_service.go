@@ -34,19 +34,19 @@ func NewAuthService(userRepo repositories.UserRepository, jwtSrv JWTService) Aut
 }
 
 func (a *authService) Login(ctx context.Context, loginRequest dto.LoginRequest) (dto.AuthResponse, error) {
-	
+
 	ctx, span := utils.Tracer().Start(ctx, "AuthService.Login")
 	defer span.End()
-	
-	span.AddEvent("Finding user by email",trace.WithAttributes(
+
+	span.AddEvent("Finding user by email", trace.WithAttributes(
 		attribute.String("email", loginRequest.Email)),
 	)
 
 	user, err := a.userRepo.FindUserByEmail(ctx, loginRequest.Email)
-	
+
 	if err != nil {
 		span.RecordError(err)
-		if errors.Is(err,mongo.ErrNoDocuments){
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			span.AddEvent("User not found")
 			return dto.AuthResponse{}, errors.New("user not found")
 		} else {
@@ -88,7 +88,7 @@ func (a *authService) Register(ctx context.Context, registerRequest dto.Register
 	existingUser, err := a.userRepo.FindUserByEmail(ctx, registerRequest.Email)
 
 	if err != nil {
-		if errors.Is(err,mongo.ErrNoDocuments){
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			span.AddEvent("User not found, proceeding with registration")
 		} else {
 			span.RecordError(err)

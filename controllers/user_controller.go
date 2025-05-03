@@ -28,7 +28,7 @@ func NewUserController(userService services.UserService) UserController {
 // GetUserByEmail implements UserController.
 func (u *userController) GetUserByEmail(ctx *gin.Context) {
 
-	spanCtx,span := utils.Tracer().Start(ctx.Request.Context(), "controllers.UserController.GetUserByEmail")
+	spanCtx, span := utils.Tracer().Start(ctx.Request.Context(), "controllers.UserController.GetUserByEmail")
 	defer span.End()
 
 	var emailRequest struct {
@@ -36,17 +36,17 @@ func (u *userController) GetUserByEmail(ctx *gin.Context) {
 	}
 	if err := ctx.ShouldBindJSON(&emailRequest); err != nil {
 		span.RecordError(err)
-		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "Invalid email format",err))
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, customerr.ValidationErrorResponse(err), err))
 		return
 	}
 
 	span.AddEvent("finding user by email")
 
 	user, err := u.userService.GetUserByEmail(spanCtx, emailRequest.Email)
-	
+
 	if err != nil {
 		span.RecordError(err)
-		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "Error occurred while fetching user information",err))
+		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "Error occurred while fetching user information", err))
 		return
 	}
 	ctx.JSON(200, user)

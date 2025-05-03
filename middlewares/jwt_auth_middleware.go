@@ -14,7 +14,7 @@ func JWTAuthMiddleware(jwtService services.JWTService) gin.HandlerFunc {
 
 		spanCtx, span := utils.Tracer().Start(ctx.Request.Context(), "middlewares.JWTAuthMiddleware")
 		defer span.End()
-		
+
 		authHeader := ctx.GetHeader("Authorization")
 		if authHeader == "" {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Authorization header missing"})

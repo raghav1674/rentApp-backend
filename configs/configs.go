@@ -11,6 +11,7 @@ type Config struct {
 	JWT     JWTConfig     `json:"jwt"`
 	Env     string        `json:"env"`
 	Tracing TracingConfig `json:"tracing"`
+	Twilio  TwilioConfig  `json:"twilio"`
 }
 
 func LoadConfig(configPath string) (*Config, error) {
@@ -43,6 +44,9 @@ func LoadConfig(configPath string) (*Config, error) {
 		return nil, err
 	}
 
+	if err := cfg.Twilio.LoadAndValidate(); err != nil {
+		return nil, err
+	}
 	return cfg, nil
 }
 
@@ -68,6 +72,14 @@ func (config *Config) GetTracingConfig() TracingConfig {
 		panic("Config not loaded. Call LoadConfig() first.")
 	}
 	return config.Tracing
+}
+
+// GetTwilioConfig returns the Twilio configuration
+func (config *Config) GetTwilioConfig() TwilioConfig {
+	if config == nil {
+		panic("Config not loaded. Call LoadConfig() first.")
+	}
+	return config.Twilio
 }
 
 // GetEnv returns the value of the environment

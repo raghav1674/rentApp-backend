@@ -24,6 +24,8 @@ func SetupRouter(
 
 		authRoutes := api.Group("/auth")
 		{
+			authRoutes.POST("/otp/generate", authController.GenerateOTP)
+			authRoutes.POST("/otp/verify", authController.VerifyOTP)
 			authRoutes.POST("/register", authController.Register)
 			authRoutes.POST("/login", authController.Login)
 		}

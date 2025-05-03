@@ -30,6 +30,7 @@ func main() {
 	mongoConfig := appConfigs.GetMongoConfig()
 	jwtConfig := appConfigs.GetJWTConfig()
 	tracingConfig := appConfigs.GetTracingConfig()
+	twilioConfig := appConfigs.GetTwilioConfig()
 
 	shutdown := utils.InitTracer(tracingConfig)
 	defer shutdown(context.Background())
@@ -42,6 +43,8 @@ func main() {
 
 	// Initialize JWT service
 	jwtService := services.NewJWTService(jwtConfig.IssuerName, jwtConfig.SecretKey, jwtConfig.ExpirationInSeconds)
+	// Initialize OTP service
+	otpService := services.NewTwilioClient(twilioConfig)
 
 	// Initialize the user repository, service, and controller
 	userRepo := repositories.NewUserRepository(mongoClient.Database)
@@ -50,7 +53,7 @@ func main() {
 
 	// Initialize the auth service and controller
 	authService := services.NewAuthService(userRepo, jwtService)
-	authController := controllers.NewAuthController(authService)
+	authController := controllers.NewAuthController(authService, otpService)
 
 	// Set up router with all routes
 	r := routes.SetupRouter(userController, authController, jwtService)
