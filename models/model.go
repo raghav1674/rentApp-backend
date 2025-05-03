@@ -35,15 +35,21 @@ const (
 	RentRecordStatusRejected RentRecordStatus = "rejected"
 )
 
+type RefreshToken struct {
+	Token   string `bson:"token" json:"token"`
+	IsValid bool   `bson:"is_valid" json:"is_valid"`
+}
+
 type User struct {
-	Id          bson.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	Name        string        `bson:"name" json:"name"`
-	Email       string        `bson:"email" json:"email"`
-	Password    string        `bson:"password" json:"password"`
-	PhoneNumber string        `bson:"phone_number" json:"phone_number"`
-	Roles       []UserRole    `bson:"roles" json:"roles"`
-	CreatedAt   time.Time     `bson:"created_at" json:"created_at"`
-	UpdatedAt   time.Time     `bson:"updated_at" json:"updated_at"`
+	Id           bson.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Name         string        `bson:"name" json:"name"`
+	Email        string        `bson:"email" json:"email"`
+	Password     string        `bson:"password" json:"password"`
+	PhoneNumber  string        `bson:"phone_number" json:"phone_number"`
+	Roles        []UserRole    `bson:"roles" json:"roles"`
+	CreatedAt    time.Time     `bson:"created_at" json:"created_at"`
+	UpdatedAt    time.Time     `bson:"updated_at" json:"updated_at"`
+	RefreshToken RefreshToken  `bson:"refresh_token" json:"refresh_token"`
 }
 
 type PersonRef struct {

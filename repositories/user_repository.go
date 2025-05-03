@@ -29,7 +29,7 @@ func NewUserRepository(db *mongo.Database) UserRepository {
 
 func (userRepository *userRepository) CreateUser(ctx context.Context, user models.User) (models.User, error) {
 
-	ctx, span := utils.Tracer().Start(ctx, "UserRepository.CreateUser")
+	_, span := utils.Tracer().Start(ctx, "UserRepository.CreateUser")
 	defer span.End()
 
 	span.AddEvent("mongo.InsertOne", trace.WithAttributes(
@@ -53,7 +53,7 @@ func (userRepository *userRepository) CreateUser(ctx context.Context, user model
 
 func (userRepository *userRepository) FindUserByEmail(ctx context.Context, email string) (models.User, error) {
 
-	ctx, span := utils.Tracer().Start(ctx, "UserRepository.FindUserByEmail")
+	_, span := utils.Tracer().Start(ctx, "UserRepository.FindUserByEmail")
 	defer span.End()
 
 	usersCollection := userRepository.db.Collection("users")
@@ -78,15 +78,23 @@ func (userRepository *userRepository) FindUserByEmail(ctx context.Context, email
 }
 
 func (userRepository *userRepository) UpdateUser(ctx context.Context, user models.User) (models.User, error) {
+
+	_, span := utils.Tracer().Start(ctx, "UserRepository.UpdateUser")
+	defer span.End()
+
 	usersCollection := userRepository.db.Collection("users")
+
+	span.AddEvent("mongo.UpdateOne", trace.WithAttributes(
+		attribute.String("collection", "users"),
+		attribute.String("operation", "find_one"),
+		attribute.String("id", user.Id.Hex()),
+		attribute.String("email", user.Email),
+	))
+
 	_, err := usersCollection.UpdateOne(ctx, bson.M{"_id": user.Id}, bson.M{"$set": user})
 	if err != nil {
+		span.RecordError(err)
 		return models.User{}, err
 	}
-	var updatedUser models.User
-	err = usersCollection.FindOne(ctx, bson.M{"_id": user.Id}).Decode(&updatedUser)
-	if err != nil {
-		return models.User{}, err
-	}
-	return updatedUser, nil
+	return userRepository.FindUserByEmail(ctx, user.Email)
 }

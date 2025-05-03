@@ -4,23 +4,29 @@
         "indexes": [
             {
                 "key": {
-                    "landlord.email": 1,
+                    "landlord.id": 1,
                     "status": 1
                 },
-                "name": "landlord_email_rent_status"
+                "name": "landlord_id_rent_status"
             },
             {
                 "key": {
-                    "tenant.email": 1,
+                    "tenant.id": 1,
                     "status": 1
                 },
-                "name": "tenant_email_rent_status"
+                "name": "tenant_id_rent_status"
             },
             {
                 "key": {
                     "created_at": -1
                 },
                 "name": "created_at_asc"
+            },
+            {
+                "key": {
+                    "updated_at": -1
+                },
+                "name": "updated_at_asc"
             }
         ]
     }

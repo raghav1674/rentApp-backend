@@ -4,9 +4,9 @@
         "indexes": [
             {
                 "key": {
-                    "email": 1
+                    "phone_number": 1
                 },
-                "name": "unique_email",
+                "name": "unique_phone_number",
                 "unique": true
             },
             {
@@ -14,6 +14,12 @@
                     "created": -1
                 },
                 "name": "created_at_asc"
+            },
+            {
+                "key": {
+                    "updated": -1
+                },
+                "name": "updated_at_asc"
             }
         ]
     }

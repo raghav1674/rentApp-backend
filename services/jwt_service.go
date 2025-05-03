@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"sample-web/dto"
 	"sample-web/utils"
 	"time"
 
@@ -21,25 +22,31 @@ type jwtCustomClaims struct {
 }
 
 type JWTService interface {
-	GenerateToken(ctx context.Context, claims CustomClaims) (string, error)
+	GenerateAccessToken(ctx context.Context, customClaims CustomClaims) (string, error)
+	GenerateRefreshToken(ctx context.Context) (string, error)
+	GenerateToken(ctx context.Context, customClaims CustomClaims) (dto.AuthResponse, error)
 	ValidateToken(ctx context.Context, token string) (*jwtCustomClaims, error)
 }
 
 type jwtService struct {
-	secretKey           string
-	issuer              string
-	expirationInSeconds int
+	secretKey                       string
+	issuer                          string
+	expirationInSeconds             int
+	refreshTokenSecret              string
+	refreshTokenExpirationInSeconds int
 }
 
-func NewJWTService(issuerName, secretKey string, expirationInSeconds int) JWTService {
+func NewJWTService(issuerName, secretKey, refreshTokenSecret string, refreshTokenExpirationInSeconds, expirationInSeconds int) JWTService {
 	return &jwtService{
-		issuer:              issuerName,
-		secretKey:           secretKey,
-		expirationInSeconds: expirationInSeconds,
+		issuer:                          issuerName,
+		secretKey:                       secretKey,
+		expirationInSeconds:             expirationInSeconds,
+		refreshTokenSecret:              refreshTokenSecret,
+		refreshTokenExpirationInSeconds: refreshTokenExpirationInSeconds,
 	}
 }
 
-func (j *jwtService) GenerateToken(ctx context.Context, customClaims CustomClaims) (string, error) {
+func (j *jwtService) GenerateAccessToken(ctx context.Context, customClaims CustomClaims) (string, error) {
 
 	_, span := utils.Tracer().Start(ctx, "JWTService.GenerateToken")
 	defer span.End()
@@ -67,6 +74,26 @@ func (j *jwtService) GenerateToken(ctx context.Context, customClaims CustomClaim
 	return token.SignedString([]byte(j.secretKey))
 }
 
+func (j *jwtService) GenerateRefreshToken(ctx context.Context) (string, error) {
+
+	_, span := utils.Tracer().Start(ctx, "JWTService.GenerateRefreshToken")
+	defer span.End()
+
+	span.AddEvent("Generating refresh token")
+
+	claims := &jwt.RegisteredClaims{
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(j.refreshTokenExpirationInSeconds) * time.Second)),
+		Issuer:    j.issuer,
+		IssuedAt:  jwt.NewNumericDate(time.Now()),
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	span.AddEvent("Signing refresh token")
+
+	return token.SignedString([]byte(j.refreshTokenSecret))
+}
+
 func (j *jwtService) ValidateToken(ctx context.Context, tokenString string) (*jwtCustomClaims, error) {
 
 	_, span := utils.Tracer().Start(ctx, "JWTService.ValidateToken")
@@ -92,4 +119,36 @@ func (j *jwtService) ValidateToken(ctx context.Context, tokenString string) (*jw
 	span.RecordError(err)
 	span.AddEvent("JWT token validation failed")
 	return nil, err
+}
+
+func (j *jwtService) GenerateToken(ctx context.Context, customClaims CustomClaims) (dto.AuthResponse, error) {
+
+	spanCtx, span := utils.Tracer().Start(ctx, "JWTService.GenerateToken")
+	defer span.End()
+
+	span.AddEvent("Generating JWT Access token")
+
+	accessToken, err := j.GenerateAccessToken(spanCtx, customClaims)
+	if err != nil {
+		span.RecordError(err)
+		span.AddEvent("Access Token generation failed")
+		return dto.AuthResponse{}, err
+	}
+
+	span.AddEvent("Access Token generated successfully")
+
+	span.AddEvent("Generating JWT Refresh token")
+
+	refreshToken, err := j.GenerateRefreshToken(spanCtx)
+
+	if err != nil {
+		span.RecordError(err)
+		span.AddEvent("Refresh Token generation failed")
+		return dto.AuthResponse{}, err
+	}
+	span.AddEvent("Refresh Token generated successfully")
+	return dto.AuthResponse{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}, nil
 }

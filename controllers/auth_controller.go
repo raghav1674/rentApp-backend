@@ -42,7 +42,7 @@ func (a *authController) GenerateOTP(ctx *gin.Context) {
 	}
 	if err := ctx.ShouldBindJSON(&otpRequest); err != nil {
 		span.RecordError(err)
-		ctx.Error(customerr.NewAppError(http.StatusBadRequest, customerr.ValidationErrorResponse(err), err))
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "invalid phone number", err))
 		return
 	}
 
@@ -69,7 +69,7 @@ func (a *authController) VerifyOTP(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&otpRequest); err != nil {
 		span.RecordError(err)
 		span.AddEvent("VerifyOTPRequestFailed")
-		ctx.Error(customerr.NewAppError(http.StatusBadRequest, customerr.ValidationErrorResponse(err), err))
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "invalid phone number or otp code", err))
 		return
 	}
 	isValid, err := a.otpService.VerifyOTP(spanCtx, otpRequest.PhoneNumber, otpRequest.Code)
@@ -103,7 +103,7 @@ func (a *authController) Login(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&loginRequest); err != nil {
 		span.RecordError(err)
 		span.AddEvent("LoginRequestFailed")
-		ctx.Error(customerr.NewAppError(http.StatusBadRequest, customerr.ValidationErrorResponse(err), err))
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "invalid request", err))
 		return
 	}
 
@@ -127,7 +127,7 @@ func (a *authController) Register(ctx *gin.Context) {
 	var registerRequest dto.RegisterRequest
 	if err := ctx.ShouldBindJSON(&registerRequest); err != nil {
 		span.RecordError(err)
-		ctx.Error(customerr.NewAppError(http.StatusBadRequest, customerr.ValidationErrorResponse(err), err))
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "invalid request", err))
 		return
 	}
 	user, err := a.authService.Register(spanCtx, registerRequest)

@@ -42,7 +42,11 @@ func main() {
 	}
 
 	// Initialize JWT service
-	jwtService := services.NewJWTService(jwtConfig.IssuerName, jwtConfig.SecretKey, jwtConfig.ExpirationInSeconds)
+	jwtService := services.NewJWTService(jwtConfig.IssuerName,
+		jwtConfig.SecretKey,
+		jwtConfig.RefreshTokenSecret,
+		jwtConfig.ExpirationInSeconds,
+		jwtConfig.RefreshTokenExpirationInSeconds)
 	// Initialize OTP service
 	otpService := services.NewTwilioClient(twilioConfig)
 

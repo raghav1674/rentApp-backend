@@ -36,7 +36,7 @@ func (u *userController) GetUserByEmail(ctx *gin.Context) {
 	}
 	if err := ctx.ShouldBindJSON(&emailRequest); err != nil {
 		span.RecordError(err)
-		ctx.Error(customerr.NewAppError(http.StatusBadRequest, customerr.ValidationErrorResponse(err), err))
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "Invalid email format", err))
 		return
 	}
 

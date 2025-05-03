@@ -65,18 +65,38 @@ func (a *authService) Login(ctx context.Context, loginRequest dto.LoginRequest) 
 		CurrentRole: loginRequest.CurrentRole,
 	}
 
-	span.AddEvent("Generating JWT token")
-	accesToken, err := a.jwtService.GenerateToken(ctx, claims)
+	authResponse, err := a.jwtService.GenerateToken(ctx, claims)
+
 	if err != nil {
 		span.RecordError(err)
-		span.AddEvent("Token generation failed")
+		return authResponse, err
+	}
+
+	span.AddEvent("Storing refresh token in database")
+
+	if user.RefreshToken.Token != "" {
+		span.AddEvent("Invalidating existing refresh token")
+		user.RefreshToken.IsValid = false
+	}
+
+	user.RefreshToken.Token = authResponse.RefreshToken
+	user.RefreshToken.IsValid = true
+	span.AddEvent("Updating user with new refresh token")
+
+	user, err = a.userRepo.UpdateUser(ctx, user)
+
+	if err != nil {
+		span.RecordError(err)
+		span.AddEvent("Failed to store refresh token")
 		return dto.AuthResponse{}, err
 	}
 
-	span.AddEvent("Token generated successfully")
-	authResponse := dto.AuthResponse{
-		AccessToken: accesToken,
-	}
+	span.AddEvent("Refresh token stored successfully")
+
+	span.AddEvent("Mapping auth response")
+
+	span.SetAttributes(attribute.String("user_id", user.Id.Hex()))
+
 	return authResponse, nil
 }
 
