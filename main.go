@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"os"
 	"sample-web/clients"
 	"sample-web/configs"
@@ -32,8 +31,7 @@ func main() {
 	tracingConfig := appConfigs.GetTracingConfig()
 	twilioConfig := appConfigs.GetTwilioConfig()
 
-	shutdown := utils.InitTracer(tracingConfig)
-	defer shutdown(context.Background())
+	utils.InitLogger(tracingConfig)
 
 	// Initialize MongoDB client
 	mongoClient, err := clients.NewMongoClient(mongoConfig)
@@ -47,6 +45,7 @@ func main() {
 		jwtConfig.RefreshTokenSecret,
 		jwtConfig.ExpirationInSeconds,
 		jwtConfig.RefreshTokenExpirationInSeconds)
+
 	// Initialize OTP service
 	otpService := services.NewTwilioClient(twilioConfig)
 
@@ -61,7 +60,6 @@ func main() {
 
 	// Set up router with all routes
 	r := routes.SetupRouter(userController, authController, jwtService)
-
 	// Start the server
 	r.Run(":8080")
 }

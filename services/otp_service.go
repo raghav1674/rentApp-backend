@@ -3,13 +3,12 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sample-web/configs"
 	"sample-web/utils"
 
 	"github.com/twilio/twilio-go"
 	verify "github.com/twilio/twilio-go/rest/verify/v2"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -32,83 +31,65 @@ type twilioService struct {
 
 func (t *twilioService) SendOTP(ctx context.Context, phoneNumber string) (string, error) {
 
-	_, span := utils.Tracer().Start(ctx, "twilioService.SendOTP")
+	log := utils.GetLogger()
+
+	spanCtx, span := log.Tracer().Start(ctx, "twilioService.SendOTP")
 	defer span.End()
 
-	span.AddEvent("SendOTPRequestReceived", trace.WithAttributes(
-		attribute.String("phone_number", phoneNumber),
-	))
+	log.Info(spanCtx, fmt.Sprintf("SendOTP Request receieved for phone number %s", phoneNumber))
 
 	params := &verify.CreateVerificationParams{}
 	params.SetTo(phoneNumber)
 	params.SetChannel(twilioChanelSMS)
 
-	span.AddEvent("SendingOTP")
+	log.Info(spanCtx, fmt.Sprintf("SendingOTP to %s", phoneNumber))
 
 	resp, err := t.client.VerifyV2.CreateVerification(t.config.ServiceSID, params)
 
 	if err != nil {
-		span.RecordError(err)
+		log.Error(spanCtx, err.Error())
 		return "", err
 	}
 
-	verification_sid := *resp.Sid
-	verification_status := *resp.Status
+	verificationSid := *resp.Sid
+	verificationStatus := *resp.Status
 
-	if !*resp.Valid {
-		span.AddEvent("InvalidPhoneNumber", trace.WithAttributes(
-			attribute.String("phone_number", phoneNumber),
-			attribute.String("status", verification_status),
-			attribute.String("verification_sid", verification_sid),
-		))
-		span.RecordError(errors.New("invalid phone number"))
-		return "", errors.New("invalid phone number")
-	}
+	log.Info(spanCtx, fmt.Sprintf("OTP Sent to %s with verification_sid as %s and status %s", phoneNumber, verificationSid, verificationStatus))
 
-	span.AddEvent("OTPSent", trace.WithAttributes(
-		attribute.String("verification_sid", verification_sid),
-		attribute.String("status", verification_status),
-	))
-	return verification_sid, nil
+	return verificationSid, nil
 }
 
 func (t *twilioService) VerifyOTP(ctx context.Context, phoneNumber string, code string) (bool, error) {
 
-	_, span := utils.Tracer().Start(ctx, "twilioService.VerifyOTP")
+	log := utils.GetLogger()
+
+	spanCtx, span := log.Tracer().Start(ctx, "twilioService.VerifyOTP")
 	defer span.End()
-	span.AddEvent("VerifyOTPRequestReceived", trace.WithAttributes(
-		attribute.String("phone_number", phoneNumber),
-	))
+
+	log.Info(spanCtx, fmt.Sprintf("VerifyOTP request received for phone number %s", phoneNumber))
 
 	params := &verify.CreateVerificationCheckParams{}
 	params.SetTo(phoneNumber)
 	params.SetCode(code)
 
-	span.AddEvent("VerifyingOTP")
+	log.Info(spanCtx, "Verifying OTP")
 
 	resp, err := t.client.VerifyV2.CreateVerificationCheck(t.config.ServiceSID, params)
 
 	if err != nil {
-		span.AddEvent("ErrorVerifyingOTP")
-		span.RecordError(err)
+		log.Error(spanCtx, fmt.Sprintf("Error Verifying OTP with error %s", err.Error()))
 		return false, err
 	}
 
-	verification_sid := *resp.Sid
-	verification_status := *resp.Status
+	verificationSid := *resp.Sid
+	verificationStatus := *resp.Status
 
 	if *resp.Status != twilioStatusApproved {
-		span.AddEvent("VerificationFailed", trace.WithAttributes(
-			attribute.String("verification_sid", verification_sid),
-			attribute.String("status", verification_status),
-		))
+		log.Error(spanCtx, fmt.Sprintf("OTP Verification failed for %s with verification_sid as %s and status %s", phoneNumber, verificationSid, verificationStatus))
 		return false, errors.New("verification failed")
 	}
 
-	span.AddEvent("VerificationSuccessful", trace.WithAttributes(
-		attribute.String("verification_sid", verification_sid),
-		attribute.String("status", verification_status),
-	))
+	log.Info(spanCtx, fmt.Sprintf("OTP Verification Succeeded for %s with verification_sid as %s and status %s", phoneNumber, verificationSid, verificationStatus))
 
 	return true, nil
 }

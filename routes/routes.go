@@ -27,26 +27,25 @@ func SetupRouter(
 			authRoutes.POST("/otp/generate", authController.GenerateOTP)
 			authRoutes.POST("/otp/verify", authController.VerifyOTP)
 			authRoutes.POST("/register", authController.Register)
-			authRoutes.POST("/login", authController.Login)
 		}
 		protectedRoutes := api.Group("/")
 		protectedRoutes.Use(middlewares.JWTAuthMiddleware(jwtService))
 		{
 			userRoutes := protectedRoutes.Group("/users")
 			{
-				userRoutes.POST("", userController.GetUserByEmail)
+				userRoutes.POST("", userController.GetUserByPhoneNumber)
 				userRoutes.PUT("", userController.UpdateUser)
 			}
 			landlordRoutes := protectedRoutes.Group("/landlords")
 			landlordRoutes.Use(middlewares.RoleCheckMiddleware(string(models.LandLord)))
 			{
-				landlordRoutes.POST("", userController.GetUserByEmail)
+				landlordRoutes.POST("", userController.GetUserByPhoneNumber)
 			}
 
 			tenantRoutes := protectedRoutes.Group("/tenants")
 			tenantRoutes.Use(middlewares.RoleCheckMiddleware(string(models.Tenant)))
 			{
-				tenantRoutes.POST("", userController.GetUserByEmail)
+				tenantRoutes.POST("", userController.GetUserByPhoneNumber)
 			}
 		}
 	}

@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"errors"
+	"fmt"
 	"net/http"
 	"sample-web/dto"
 	customerr "sample-web/errors"
@@ -9,13 +9,11 @@ import (
 	"sample-web/utils"
 
 	"github.com/gin-gonic/gin"
-	"go.opentelemetry.io/otel/attribute"
 )
 
 type AuthController interface {
 	GenerateOTP(ctx *gin.Context)
 	VerifyOTP(ctx *gin.Context)
-	Login(ctx *gin.Context)
 	Register(ctx *gin.Context)
 }
 
@@ -32,23 +30,26 @@ func NewAuthController(authService services.AuthService, otpService services.OTP
 }
 
 func (a *authController) GenerateOTP(ctx *gin.Context) {
-	spanCtx, span := utils.Tracer().Start(ctx.Request.Context(), "AuthController.GenerateOTP")
+
+	log := utils.GetLogger()
+
+	spanCtx, span := log.Tracer().Start(ctx.Request.Context(), "AuthController.GenerateOTP")
 	defer span.End()
 
-	span.AddEvent("GenerateOTPRequestReceived")
+	log.Info(spanCtx, "Generate OTP Request Received")
 
 	var otpRequest struct {
 		PhoneNumber string `json:"phone_number" binding:"required,e164"`
 	}
 	if err := ctx.ShouldBindJSON(&otpRequest); err != nil {
-		span.RecordError(err)
+		log.Error(spanCtx, fmt.Sprintf("invalid phone number with error %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "invalid phone number", err))
 		return
 	}
 
 	_, err := a.otpService.SendOTP(spanCtx, otpRequest.PhoneNumber)
 	if err != nil {
-		span.RecordError(err)
+		log.Error(spanCtx, fmt.Sprintf("failed to generate OTP with error %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "failed to generate OTP", err))
 		return
 	}
@@ -57,9 +58,12 @@ func (a *authController) GenerateOTP(ctx *gin.Context) {
 }
 
 func (a *authController) VerifyOTP(ctx *gin.Context) {
-	spanCtx, span := utils.Tracer().Start(ctx.Request.Context(), "AuthController.VerifyOTP")
+
+	log := utils.GetLogger()
+	spanCtx, span := log.Tracer().Start(ctx.Request.Context(), "AuthController.VerifyOTP")
 	defer span.End()
-	span.AddEvent("VerifyOTPRequestReceived")
+
+	log.Info(spanCtx, "Verify OTP Request Received")
 
 	var otpRequest struct {
 		PhoneNumber string `json:"phone_number" binding:"required,e164"`
@@ -67,78 +71,70 @@ func (a *authController) VerifyOTP(ctx *gin.Context) {
 	}
 
 	if err := ctx.ShouldBindJSON(&otpRequest); err != nil {
-		span.RecordError(err)
-		span.AddEvent("VerifyOTPRequestFailed")
+		log.Error(spanCtx, fmt.Sprintf("invalid phone number or otp code with error %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "invalid phone number or otp code", err))
 		return
 	}
+
 	isValid, err := a.otpService.VerifyOTP(spanCtx, otpRequest.PhoneNumber, otpRequest.Code)
+
 	if err != nil {
-		span.RecordError(err)
-		span.AddEvent("VerifyOTPRequestFailed")
+		log.Error(spanCtx, fmt.Sprintf("failed to verify OTP with error %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "failed to verify OTP", err))
 		return
 	}
 	if !isValid {
-		span.AddEvent("VerifyOTPRequestFailed")
-		span.RecordError(errors.New("invalid OTP"))
+		log.Error(spanCtx, "invalid OTP")
 		ctx.Error(customerr.NewAppError(http.StatusUnauthorized, "invalid OTP", nil))
 		return
 	}
-	span.SetAttributes(
-		attribute.String("phone_number", otpRequest.PhoneNumber),
-	)
-	span.AddEvent("OTP verified successfully")
-	ctx.JSON(http.StatusOK, gin.H{"message": "OTP verified successfully"})
-}
 
-func (a *authController) Login(ctx *gin.Context) {
+	log.Info(spanCtx, "OTP verified successfully")
 
-	spanCtx, span := utils.Tracer().Start(ctx.Request.Context(), "AuthController.Register")
-	defer span.End()
+	authResponse, err := a.authService.Login(spanCtx, dto.LoginRequest{
+		PhoneNumber: otpRequest.PhoneNumber,
+	})
 
-	span.AddEvent("LoginRequestReceived")
-
-	var loginRequest dto.LoginRequest
-	if err := ctx.ShouldBindJSON(&loginRequest); err != nil {
-		span.RecordError(err)
-		span.AddEvent("LoginRequestFailed")
-		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "invalid request", err))
+	if err == nil {
+		ctx.JSON(http.StatusOK, gin.H{
+			"otp_verified":    true,
+			"user_registered": true,
+			"access_token":    authResponse.AccessToken,
+			"refresh_token":   authResponse.RefreshToken,
+			"error":           false,
+		})
 		return
 	}
 
-	token, err := a.authService.Login(spanCtx, loginRequest)
-	if err != nil {
-		span.RecordError(err)
-		span.AddEvent("LoginRequestFailed")
-		ctx.Error(customerr.NewAppError(http.StatusUnauthorized, "invalid credentials", err))
-		return
-	}
-	ctx.JSON(http.StatusOK, gin.H{"token": token})
+	ctx.JSON(http.StatusOK, gin.H{
+		"otp_verified":    true,
+		"user_registered": false,
+		"error":           false,
+	})
 }
 
 func (a *authController) Register(ctx *gin.Context) {
 
-	spanCtx, span := utils.Tracer().Start(ctx.Request.Context(), "AuthController.Register")
+	log := utils.GetLogger()
+
+	spanCtx, span := log.Tracer().Start(ctx.Request.Context(), "AuthController.Register")
 	defer span.End()
 
-	span.AddEvent("RegisterRequestReceived")
+	log.Info(spanCtx, "Register Request Received")
 
 	var registerRequest dto.RegisterRequest
 	if err := ctx.ShouldBindJSON(&registerRequest); err != nil {
-		span.RecordError(err)
+		log.Error(spanCtx, fmt.Sprintf("invalid request with error %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "invalid request", err))
 		return
 	}
 	user, err := a.authService.Register(spanCtx, registerRequest)
 	if err != nil {
-		span.RecordError(err)
-		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "email already registered", err))
+		log.Error(spanCtx, "register request failed with error %s", err.Error())
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "register request failed", err))
 		return
 	}
-	span.SetAttributes(
-		attribute.String("user_id", user.Id),
-	)
-	span.AddEvent("User registered")
+
+	log.Info(spanCtx, "User registered")
 	ctx.JSON(http.StatusOK, user)
 }

@@ -1,8 +1,7 @@
 package dto
 
 type LoginRequest struct {
-	Email       string `json:"email" binding:"required,email"`
-	Password    string `json:"password" binding:"required"`
+	PhoneNumber string `json:"phone_number" binding:"required,e164"`
 	CurrentRole string `json:"current_role" binding:"required,oneof=landlord tenant"`
 }
 
@@ -13,9 +12,7 @@ type AuthResponse struct {
 
 type RegisterRequest struct {
 	Name        string   `json:"name" binding:"required,min=1"`
-	Email       string   `json:"email" binding:"required,email"`
-	Password    string   `json:"password" binding:"required,min=6"`
-	PhoneNumber string   `json:"phone_number"`
+	PhoneNumber string   `json:"phone_number" binding:"required,e164"`
 	Roles       []string `json:"roles"`
 }
 

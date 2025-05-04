@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 	"sample-web/dto"
 	customerr "sample-web/errors"
@@ -11,7 +12,7 @@ import (
 )
 
 type UserController interface {
-	GetUserByEmail(ctx *gin.Context)
+	GetUserByPhoneNumber(ctx *gin.Context)
 	UpdateUser(ctx *gin.Context)
 }
 
@@ -25,34 +26,34 @@ func NewUserController(userService services.UserService) UserController {
 	}
 }
 
-// GetUserByEmail implements UserController.
-func (u *userController) GetUserByEmail(ctx *gin.Context) {
+func (u *userController) GetUserByPhoneNumber(ctx *gin.Context) {
 
-	spanCtx, span := utils.Tracer().Start(ctx.Request.Context(), "controllers.UserController.GetUserByEmail")
+	log := utils.GetLogger()
+
+	spanCtx, span := log.Tracer().Start(ctx.Request.Context(), "controllers.UserController.GetUserByEmail")
 	defer span.End()
 
-	var emailRequest struct {
-		Email string `json:"email" binding:"required,email"`
+	var phoneNumberRequest struct {
+		PhoneNumber string `json:"phone_number" binding:"required,e164"`
 	}
-	if err := ctx.ShouldBindJSON(&emailRequest); err != nil {
-		span.RecordError(err)
-		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "Invalid email format", err))
+	if err := ctx.ShouldBindJSON(&phoneNumberRequest); err != nil {
+		log.Error(spanCtx, err.Error())
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "Invalid phone format", err))
 		return
 	}
 
-	span.AddEvent("finding user by email")
+	log.Info(spanCtx, fmt.Sprintf("finding user by phone number %s", phoneNumberRequest.PhoneNumber))
 
-	user, err := u.userService.GetUserByEmail(spanCtx, emailRequest.Email)
+	user, err := u.userService.GetUserByPhoneNumber(spanCtx, phoneNumberRequest.PhoneNumber)
 
 	if err != nil {
-		span.RecordError(err)
+		log.Error(spanCtx, err.Error())
 		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "Error occurred while fetching user information", err))
 		return
 	}
 	ctx.JSON(200, user)
 }
 
-// UpdateUser implements UserController.
 func (u *userController) UpdateUser(ctx *gin.Context) {
 	var userRequestDto dto.UserRequest
 	if err := ctx.ShouldBindJSON(&userRequestDto); err != nil {

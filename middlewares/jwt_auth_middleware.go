@@ -33,7 +33,7 @@ func JWTAuthMiddleware(jwtService services.JWTService) gin.HandlerFunc {
 			return
 		}
 
-		ctx.Set("email", customClaims.Email)
+		ctx.Set("user_id", customClaims.UserId)
 		ctx.Set("current_role", customClaims.CurrentRole)
 
 		ctx.Next()

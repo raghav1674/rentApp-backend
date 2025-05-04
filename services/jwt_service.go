@@ -2,17 +2,16 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"sample-web/dto"
 	"sample-web/utils"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 )
 
 type CustomClaims struct {
-	Email       string `json:"email"`
+	UserId      string `json:"user_id"`
 	CurrentRole string `json:"current_role"`
 }
 
@@ -48,15 +47,12 @@ func NewJWTService(issuerName, secretKey, refreshTokenSecret string, refreshToke
 
 func (j *jwtService) GenerateAccessToken(ctx context.Context, customClaims CustomClaims) (string, error) {
 
-	_, span := utils.Tracer().Start(ctx, "JWTService.GenerateToken")
+	log := utils.GetLogger()
+
+	spanCtx, span := log.Tracer().Start(ctx, "JWTService.GenerateToken")
 	defer span.End()
 
-	span.SetAttributes(attribute.String("current_role", customClaims.CurrentRole))
-
-	span.AddEvent("Generating JWT token", trace.WithAttributes(
-		attribute.String("email", customClaims.Email),
-		attribute.String("current_role", customClaims.CurrentRole),
-	))
+	log.Info(spanCtx, fmt.Sprintf("Generating JWT token for user with user_id %s and current_role as %s", customClaims.UserId, customClaims.CurrentRole))
 
 	claims := &jwtCustomClaims{
 		CustomClaims: customClaims,
@@ -69,17 +65,19 @@ func (j *jwtService) GenerateAccessToken(ctx context.Context, customClaims Custo
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	span.AddEvent("Signing JWT token")
+	log.Info(spanCtx, "Signing JWT token")
 
 	return token.SignedString([]byte(j.secretKey))
 }
 
 func (j *jwtService) GenerateRefreshToken(ctx context.Context) (string, error) {
 
-	_, span := utils.Tracer().Start(ctx, "JWTService.GenerateRefreshToken")
+	log := utils.GetLogger()
+
+	spanCtx, span := log.Tracer().Start(ctx, "JWTService.GenerateRefreshToken")
 	defer span.End()
 
-	span.AddEvent("Generating refresh token")
+	log.Info(spanCtx, "Generating refresh token")
 
 	claims := &jwt.RegisteredClaims{
 		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(j.refreshTokenExpirationInSeconds) * time.Second)),
@@ -89,64 +87,66 @@ func (j *jwtService) GenerateRefreshToken(ctx context.Context) (string, error) {
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 
-	span.AddEvent("Signing refresh token")
+	log.Info(spanCtx, "Signing refresh token")
 
 	return token.SignedString([]byte(j.refreshTokenSecret))
 }
 
 func (j *jwtService) ValidateToken(ctx context.Context, tokenString string) (*jwtCustomClaims, error) {
 
-	_, span := utils.Tracer().Start(ctx, "JWTService.ValidateToken")
+	log := utils.GetLogger()
+
+	spanCtx, span := log.Tracer().Start(ctx, "JWTService.ValidateToken")
 	defer span.End()
 
-	span.AddEvent("Validating JWT token")
+	log.Info(spanCtx, "Validating JWT token")
 
 	var claims jwtCustomClaims
 
 	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (interface{}, error) {
-		span.AddEvent("Parsing JWT token")
+		log.Info(spanCtx, "Parsing JWT token")
 		return []byte(j.secretKey), nil
 	})
 
 	if err != nil {
-		span.RecordError(err)
+		log.Error(spanCtx, err.Error())
 		return nil, err
 	}
 	if claims, ok := token.Claims.(*jwtCustomClaims); ok && token.Valid {
-		span.AddEvent("JWT token validated successfully")
+		log.Info(spanCtx, "JWT token validated successfully")
 		return claims, nil
 	}
-	span.RecordError(err)
-	span.AddEvent("JWT token validation failed")
+	log.Error(spanCtx, "JWT token validation failed")
+
 	return nil, err
 }
 
 func (j *jwtService) GenerateToken(ctx context.Context, customClaims CustomClaims) (dto.AuthResponse, error) {
 
-	spanCtx, span := utils.Tracer().Start(ctx, "JWTService.GenerateToken")
+	log := utils.GetLogger()
+
+	spanCtx, span := log.Tracer().Start(ctx, "JWTService.GenerateToken")
 	defer span.End()
 
-	span.AddEvent("Generating JWT Access token")
+	log.Info(spanCtx, "Generating JWT Access token")
 
 	accessToken, err := j.GenerateAccessToken(spanCtx, customClaims)
 	if err != nil {
-		span.RecordError(err)
-		span.AddEvent("Access Token generation failed")
+		log.Error(spanCtx, fmt.Sprintf("Access Token generation failed with %s", err.Error()))
 		return dto.AuthResponse{}, err
 	}
 
-	span.AddEvent("Access Token generated successfully")
+	log.Info(spanCtx, "Access Token generated successfully")
 
-	span.AddEvent("Generating JWT Refresh token")
+	log.Info(spanCtx, "Generating JWT Refresh token")
 
 	refreshToken, err := j.GenerateRefreshToken(spanCtx)
 
 	if err != nil {
-		span.RecordError(err)
-		span.AddEvent("Refresh Token generation failed")
+		log.Error(spanCtx, fmt.Sprintf("Refresh Token generation failed with %s", err.Error()))
 		return dto.AuthResponse{}, err
 	}
-	span.AddEvent("Refresh Token generated successfully")
+	log.Info(spanCtx, "Refresh Token generated successfully")
 	return dto.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,

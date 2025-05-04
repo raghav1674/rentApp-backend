@@ -13,7 +13,7 @@ import (
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user models.User) (models.User, error)
-	FindUserByEmail(ctx context.Context, email string) (models.User, error)
+	FindUserByPhoneNumber(ctx context.Context, phoneNumber string) (models.User, error)
 	UpdateUser(ctx context.Context, user models.User) (models.User, error)
 }
 
@@ -35,7 +35,7 @@ func (userRepository *userRepository) CreateUser(ctx context.Context, user model
 	span.AddEvent("mongo.InsertOne", trace.WithAttributes(
 		attribute.String("collection", "users"),
 		attribute.String("operation", "insert_one"),
-		attribute.String("email", user.Email),
+		attribute.String("phone_number", user.PhoneNumber),
 	))
 
 	usersCollection := userRepository.db.Collection("users")
@@ -48,12 +48,12 @@ func (userRepository *userRepository) CreateUser(ctx context.Context, user model
 
 	span.AddEvent("UserCreated")
 
-	return userRepository.FindUserByEmail(ctx, user.Email)
+	return userRepository.FindUserByPhoneNumber(ctx, user.PhoneNumber)
 }
 
-func (userRepository *userRepository) FindUserByEmail(ctx context.Context, email string) (models.User, error) {
+func (userRepository *userRepository) FindUserByPhoneNumber(ctx context.Context, phoneNumber string) (models.User, error) {
 
-	_, span := utils.Tracer().Start(ctx, "UserRepository.FindUserByEmail")
+	_, span := utils.Tracer().Start(ctx, "UserRepository.FindUserByPhoneNumber")
 	defer span.End()
 
 	usersCollection := userRepository.db.Collection("users")
@@ -62,10 +62,10 @@ func (userRepository *userRepository) FindUserByEmail(ctx context.Context, email
 	span.AddEvent("mongo.FindOne", trace.WithAttributes(
 		attribute.String("collection", "users"),
 		attribute.String("operation", "find_one"),
-		attribute.String("email", email),
+		attribute.String("phone_number", phoneNumber),
 	))
 
-	err := usersCollection.FindOne(ctx, bson.M{"email": email}).Decode(&user)
+	err := usersCollection.FindOne(ctx, bson.M{"phone_number": phoneNumber}).Decode(&user)
 
 	if err != nil {
 		span.RecordError(err)
@@ -88,7 +88,7 @@ func (userRepository *userRepository) UpdateUser(ctx context.Context, user model
 		attribute.String("collection", "users"),
 		attribute.String("operation", "find_one"),
 		attribute.String("id", user.Id.Hex()),
-		attribute.String("email", user.Email),
+		attribute.String("phone_number", user.PhoneNumber),
 	))
 
 	_, err := usersCollection.UpdateOne(ctx, bson.M{"_id": user.Id}, bson.M{"$set": user})
@@ -96,5 +96,5 @@ func (userRepository *userRepository) UpdateUser(ctx context.Context, user model
 		span.RecordError(err)
 		return models.User{}, err
 	}
-	return userRepository.FindUserByEmail(ctx, user.Email)
+	return userRepository.FindUserByPhoneNumber(ctx, user.PhoneNumber)
 }

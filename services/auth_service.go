@@ -11,9 +11,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
-	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService interface {
@@ -35,33 +32,27 @@ func NewAuthService(userRepo repositories.UserRepository, jwtSrv JWTService) Aut
 
 func (a *authService) Login(ctx context.Context, loginRequest dto.LoginRequest) (dto.AuthResponse, error) {
 
-	ctx, span := utils.Tracer().Start(ctx, "AuthService.Login")
+	log := utils.GetLogger()
+
+	spanCtx, span := log.Tracer().Start(ctx, "AuthService.Login")
 	defer span.End()
 
-	span.AddEvent("Finding user by email", trace.WithAttributes(
-		attribute.String("email", loginRequest.Email)),
-	)
+	log.Info(spanCtx, "Finding user by phone number")
 
-	user, err := a.userRepo.FindUserByEmail(ctx, loginRequest.Email)
+	user, err := a.userRepo.FindUserByPhoneNumber(ctx, loginRequest.PhoneNumber)
 
 	if err != nil {
 		span.RecordError(err)
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			span.AddEvent("User not found")
+			log.Info(spanCtx, "User not found")
 			return dto.AuthResponse{}, errors.New("user not found")
 		} else {
 			return dto.AuthResponse{}, err
 		}
 	}
 
-	span.AddEvent("User found, verifying password")
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginRequest.Password)); err != nil {
-		span.AddEvent("Password verification failed")
-		return dto.AuthResponse{}, err
-	}
-
 	claims := CustomClaims{
-		Email:       loginRequest.Email,
+		UserId:      user.Id.Hex(),
 		CurrentRole: loginRequest.CurrentRole,
 	}
 
@@ -72,75 +63,64 @@ func (a *authService) Login(ctx context.Context, loginRequest dto.LoginRequest) 
 		return authResponse, err
 	}
 
-	span.AddEvent("Storing refresh token in database")
+	log.Info(spanCtx, "Storing refresh token in database")
 
 	if user.RefreshToken.Token != "" {
-		span.AddEvent("Invalidating existing refresh token")
+		log.Info(spanCtx, "Invalidating existing refresh token")
 		user.RefreshToken.IsValid = false
 	}
 
 	user.RefreshToken.Token = authResponse.RefreshToken
 	user.RefreshToken.IsValid = true
-	span.AddEvent("Updating user with new refresh token")
+	log.Info(spanCtx, "Updating user with new refresh token")
 
 	user, err = a.userRepo.UpdateUser(ctx, user)
 
 	if err != nil {
-		span.RecordError(err)
-		span.AddEvent("Failed to store refresh token")
+		log.Error(spanCtx, err.Error())
 		return dto.AuthResponse{}, err
 	}
 
-	span.AddEvent("Refresh token stored successfully")
+	log.Info(spanCtx, "Refresh token stored successfully")
 
-	span.AddEvent("Mapping auth response")
-
-	span.SetAttributes(attribute.String("user_id", user.Id.Hex()))
+	log.Info(spanCtx, "Mapping auth response")
 
 	return authResponse, nil
 }
 
 func (a *authService) Register(ctx context.Context, registerRequest dto.RegisterRequest) (dto.UserResponse, error) {
 
-	ctx, span := utils.Tracer().Start(ctx, "AuthService.Register")
+	log := utils.GetLogger()
+
+	spanCtx, span := log.Tracer().Start(ctx, "AuthService.Register")
 	defer span.End()
 
-	existingUser, err := a.userRepo.FindUserByEmail(ctx, registerRequest.Email)
+	existingUser, err := a.userRepo.FindUserByPhoneNumber(spanCtx, registerRequest.PhoneNumber)
 
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			span.AddEvent("User not found, proceeding with registration")
+			log.Info(spanCtx, "User not found, proceeding with registration")
 		} else {
-			span.RecordError(err)
+			log.Error(spanCtx, err.Error())
 			return dto.UserResponse{}, err
 		}
 	}
 
-	if existingUser.Email == registerRequest.Email {
+	if existingUser.PhoneNumber == registerRequest.PhoneNumber {
 		return dto.UserResponse{}, errors.New("user already exists")
-	}
-
-	span.AddEvent("Generating password hash")
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(registerRequest.Password), bcrypt.DefaultCost)
-
-	if err != nil {
-		span.RecordError(err)
-		return dto.UserResponse{}, err
 	}
 
 	now := time.Now()
 
 	user := models.User{
 		Name:        registerRequest.Name,
-		Email:       registerRequest.Email,
-		Password:    string(hashedPassword),
 		PhoneNumber: registerRequest.PhoneNumber,
 		Roles:       mappers.ToUserRoles(registerRequest.Roles),
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
-	span.AddEvent("Creating user using repository")
+
+	log.Info(spanCtx, "Creating user using repository")
 
 	user, err = a.userRepo.CreateUser(ctx, user)
 
@@ -149,13 +129,13 @@ func (a *authService) Register(ctx context.Context, registerRequest dto.Register
 		return dto.UserResponse{}, err
 	}
 
-	span.AddEvent("User created successfully")
+	log.Info(spanCtx, "User created successfully")
 
-	span.AddEvent("Mapping user to response")
+	log.Info(spanCtx, "Mapping user to response")
 
 	userResponse := mappers.ToUserResponse(user)
 
-	span.AddEvent("User mapped to response successfully")
+	log.Info(spanCtx, "User mapped to response successfully")
 
 	return userResponse, nil
 }

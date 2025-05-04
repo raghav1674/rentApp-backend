@@ -43,8 +43,6 @@ type RefreshToken struct {
 type User struct {
 	Id           bson.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	Name         string        `bson:"name" json:"name"`
-	Email        string        `bson:"email" json:"email"`
-	Password     string        `bson:"password" json:"password"`
 	PhoneNumber  string        `bson:"phone_number" json:"phone_number"`
 	Roles        []UserRole    `bson:"roles" json:"roles"`
 	CreatedAt    time.Time     `bson:"created_at" json:"created_at"`
@@ -53,8 +51,8 @@ type User struct {
 }
 
 type PersonRef struct {
-	Id    bson.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	Email string        `bson:"email" json:"email"`
+	Id   bson.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Name string        `bson:"name" json:"name"`
 }
 
 type RentInfo struct {
