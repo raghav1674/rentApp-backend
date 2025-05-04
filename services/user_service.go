@@ -11,12 +11,14 @@ import (
 type UserService interface {
 	CreateUser(ctx context.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error)
 	GetUserByPhoneNumber(ctx context.Context, phoneNumber string) (dto.UserResponse, error)
+	GetUserById(ctx context.Context, userId string) (dto.UserResponse, error)
 	UpdateUser(ctx context.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error)
 }
 
 type userService struct {
 	userRepo repositories.UserRepository
 }
+
 
 func NewUserService(userRepo repositories.UserRepository) UserService {
 	return &userService{
@@ -34,6 +36,7 @@ func (u *userService) CreateUser(ctx context.Context, userRequestDto dto.UserReq
 	return userResponse, nil
 }
 
+
 func (u *userService) GetUserByPhoneNumber(ctx context.Context, phoneNumber string) (dto.UserResponse, error) {
 	user, err := u.userRepo.FindUserByPhoneNumber(ctx, phoneNumber)
 	if err != nil {
@@ -42,6 +45,7 @@ func (u *userService) GetUserByPhoneNumber(ctx context.Context, phoneNumber stri
 	userResponse := mappers.ToUserResponse(user)
 	return userResponse, nil
 }
+
 
 func (u *userService) UpdateUser(ctx context.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error) {
 	user, err := u.userRepo.FindUserByPhoneNumber(ctx, userRequestDto.PhoneNumber)
@@ -56,5 +60,14 @@ func (u *userService) UpdateUser(ctx context.Context, userRequestDto dto.UserReq
 		return dto.UserResponse{}, err
 	}
 	userResponse := mappers.ToUserResponse(updatedUser)
+	return userResponse, nil
+}
+
+func (u *userService) GetUserById(ctx context.Context, userId string) (dto.UserResponse, error) {
+	user, err := u.userRepo.FindUserById(ctx, userId)
+	if err != nil {
+		return dto.UserResponse{}, err
+	}
+	userResponse := mappers.ToUserResponse(user)
 	return userResponse, nil
 }

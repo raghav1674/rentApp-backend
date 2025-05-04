@@ -12,7 +12,9 @@ import (
 func JWTAuthMiddleware(jwtService services.JWTService) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
-		spanCtx, span := utils.Tracer().Start(ctx.Request.Context(), "middlewares.JWTAuthMiddleware")
+		log := utils.GetLogger()
+
+		spanCtx, span := log.Tracer().Start(ctx.Request.Context(), "middlewares.JWTAuthMiddleware")
 		defer span.End()
 
 		authHeader := ctx.GetHeader("Authorization")

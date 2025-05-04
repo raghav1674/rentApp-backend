@@ -11,9 +11,11 @@ import (
 	"sample-web/utils"
 )
 
+
 const (
 	defaultConfigPath = "config.json"
 )
+
 
 func main() {
 
@@ -58,8 +60,14 @@ func main() {
 	authService := services.NewAuthService(userRepo, jwtService)
 	authController := controllers.NewAuthController(authService, otpService)
 
+	// Initialize rent repository, service, and controller
+	rentRepo := repositories.NewRentRepository(mongoClient.Database)
+	rentService := services.NewRentService(rentRepo,userRepo)
+	rentController := controllers.NewRentController(rentService)
+
+
 	// Set up router with all routes
-	r := routes.SetupRouter(userController, authController, jwtService)
+	r := routes.SetupRouter(userController, authController, rentController,jwtService)
 	// Start the server
 	r.Run(":8080")
 }

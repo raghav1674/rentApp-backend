@@ -13,15 +13,18 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 )
 
+
 type AuthService interface {
 	Login(ctx context.Context, loginRequest dto.LoginRequest) (dto.AuthResponse, error)
 	Register(ctx context.Context, registerRequest dto.RegisterRequest) (dto.UserResponse, error)
 }
 
+
 type authService struct {
 	userRepo   repositories.UserRepository
 	jwtService JWTService
 }
+
 
 func NewAuthService(userRepo repositories.UserRepository, jwtSrv JWTService) AuthService {
 	return &authService{
@@ -29,6 +32,7 @@ func NewAuthService(userRepo repositories.UserRepository, jwtSrv JWTService) Aut
 		jwtService: jwtSrv,
 	}
 }
+
 
 func (a *authService) Login(ctx context.Context, loginRequest dto.LoginRequest) (dto.AuthResponse, error) {
 
@@ -87,6 +91,7 @@ func (a *authService) Login(ctx context.Context, loginRequest dto.LoginRequest) 
 
 	return authResponse, nil
 }
+
 
 func (a *authService) Register(ctx context.Context, registerRequest dto.RegisterRequest) (dto.UserResponse, error) {
 

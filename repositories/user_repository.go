@@ -14,6 +14,7 @@ import (
 type UserRepository interface {
 	CreateUser(ctx context.Context, user models.User) (models.User, error)
 	FindUserByPhoneNumber(ctx context.Context, phoneNumber string) (models.User, error)
+	FindUserById(ctx context.Context, userId string) (models.User, error)
 	UpdateUser(ctx context.Context, user models.User) (models.User, error)
 }
 
@@ -66,6 +67,38 @@ func (userRepository *userRepository) FindUserByPhoneNumber(ctx context.Context,
 	))
 
 	err := usersCollection.FindOne(ctx, bson.M{"phone_number": phoneNumber}).Decode(&user)
+
+	if err != nil {
+		span.RecordError(err)
+		return models.User{}, err
+	}
+
+	span.AddEvent("UserFound")
+
+	return user, nil
+}
+
+func (userRepository *userRepository) FindUserById(ctx context.Context, userId string) (models.User, error) {
+
+	_, span := utils.Tracer().Start(ctx, "UserRepository.FindUserById")
+	defer span.End()
+
+	usersCollection := userRepository.db.Collection("users")
+	var user models.User
+
+	span.AddEvent("mongo.FindOne", trace.WithAttributes(
+		attribute.String("collection", "users"),
+		attribute.String("operation", "find_one"),
+		attribute.String("_id", userId),
+	))
+
+	objectID, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		span.RecordError(err)
+		return models.User{}, err
+	}
+
+	err = usersCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&user)
 
 	if err != nil {
 		span.RecordError(err)
