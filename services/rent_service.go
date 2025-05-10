@@ -3,9 +3,11 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sample-web/dto"
 	"sample-web/models"
 	"sample-web/repositories"
+	"sample-web/utils"
 	"time"
 )
 
@@ -32,15 +34,21 @@ func NewRentService(rentRepo repositories.RentRepository, userRepo repositories.
 
 func (r *rentService) CreateRent(ctx context.Context, rentRequest dto.RentRequest) (dto.RentResponse, error) {
 
+	log := utils.GetLogger()
+	spanCtx, span := log.Tracer().Start(ctx, "RentService.CreateRent")
+	defer span.End()
+	
 	// get landlord and tenant from the database
-	landLord, err := r.userRepo.FindUserById(ctx, rentRequest.LandLordId)
+	landLord, err := r.userRepo.FindUserById(spanCtx, rentRequest.LandLordId)
 
 	if err != nil {
+		log.Error(spanCtx, fmt.Sprintf("Failed to find landlord with %s", err.Error()))
 		return dto.RentResponse{}, err
 	}
 
-	tenant, err := r.userRepo.FindUserById(ctx, rentRequest.TenantId)
+	tenant, err := r.userRepo.FindUserById(spanCtx, rentRequest.TenantId)
 	if err != nil {
+		log.Error(spanCtx, "Failed to find tenant with %s", err.Error())
 		return dto.RentResponse{}, err
 	}
 
@@ -66,8 +74,11 @@ func (r *rentService) CreateRent(ctx context.Context, rentRequest dto.RentReques
 	createdRent, err := r.rentRepo.CreateRent(ctx, rent)
 
 	if err != nil {
+		log.Error(spanCtx, "Failed to create rent with %s", err.Error())
 		return dto.RentResponse{}, err
 	}
+
+	log.Info(spanCtx, "Rent created successfully with ID: %s", createdRent.Id)
 
 	return dto.RentResponse{
 		Rents: []models.Rent{createdRent},
@@ -88,10 +99,21 @@ func (r *rentService) GetAllRents(ctx context.Context, userId string, userRole s
 
 // GetRentById implements RentService.
 func (r *rentService) GetRentById(ctx context.Context, rentId string) (dto.RentResponse, error) {
-	rent, err := r.rentRepo.FindRentById(ctx, rentId)
+	
+	log := utils.GetLogger()
+	spanCtx, span := log.Tracer().Start(ctx, "RentService.GetRentById")
+	defer span.End()
+
+	log.Info(spanCtx, "Rent ID: %s", rentId)
+	
+	rent, err := r.rentRepo.FindRentById(spanCtx, rentId)
 	if err != nil {
+		log.Error(spanCtx, "Failed to find rent with %s", err.Error())
 		return dto.RentResponse{}, err
 	}
+
+	log.Info(spanCtx, "Rent found with ID: %s", rent.Id)
+
 	return dto.RentResponse{
 		Rents: []models.Rent{rent},
 	}, nil	
@@ -101,14 +123,22 @@ func (r *rentService) GetRentById(ctx context.Context, rentId string) (dto.RentR
 // UpdateRent implements RentService.
 func (r *rentService) UpdateRent(ctx context.Context, rentId string, rentRequest dto.RentRequest) (dto.RentResponse, error) {
 
+	log := utils.GetLogger()
+	spanCtx, span := log.Tracer().Start(ctx, "RentService.UpdateRent")
+	defer span.End()
+
 	now := time.Now()
 
-	rent, err := r.rentRepo.FindRentById(ctx, rentId)
+	log.Info(spanCtx, "Rent ID: %s", rentId)
+	rent, err := r.rentRepo.FindRentById(spanCtx, rentId)
 	if err != nil {
+		log.Error(spanCtx, "Failed to find rent with %s", err.Error())
 		return dto.RentResponse{}, err
 	}
+	log.Info(spanCtx, "Rent found with ID: %s", rent.Id)
 
 	if rent.Status == models.RentStatusInactive {
+		log.Error(spanCtx, "Failed to update rent as it is already closed")
 		return dto.RentResponse{}, errors.New("rent is already closed")
 	}
 
@@ -126,11 +156,14 @@ func (r *rentService) UpdateRent(ctx context.Context, rentId string, rentRequest
 	}
 	rent.UpdatedAt = now
 
-	updatedRent, err := r.rentRepo.UpdateRent(ctx, rent)
+	updatedRent, err := r.rentRepo.UpdateRent(spanCtx, rent)
 
 	if err != nil {
+		log.Error(spanCtx, "Failed to update rent with %s", err.Error())
 		return dto.RentResponse{}, err
 	}
+	
+	log.Info(spanCtx, "Rent updated successfully with ID: %s", updatedRent.Id)
 
 	return dto.RentResponse{
 		Rents: []models.Rent{updatedRent},

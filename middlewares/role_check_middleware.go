@@ -10,14 +10,12 @@ import (
 func RoleCheckMiddleware(requiredRole string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
-		_, span := utils.Tracer().Start(ctx.Request.Context(), "middlewares.RoleCheckMiddleware")
+		log := utils.GetLogger()
+	
+		_, span := log.Tracer().Start(ctx.Request.Context(), "middlewares.RoleCheckMiddleware")
 		defer span.End()
-
-		currentRoleHeader := ctx.GetHeader("x-current-role")
-		if currentRoleHeader != "" {
-			ctx.Set("current_role", currentRoleHeader)
-		}
-
+		
+	
 		currentRole, exists := ctx.Get("current_role") 
 		
 		if !exists {

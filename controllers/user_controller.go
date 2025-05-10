@@ -97,7 +97,7 @@ func (u *userController) GetCurrentUser(ctx *gin.Context) {
 	user, err := u.userService.GetUserById(spanCtx, value.(string))
 	if err != nil {
 		log.Error(spanCtx, fmt.Sprintf("User not found with user_id %s with error %s", user.Id, err.Error()))
-		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "user not found", nil))
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "user not found", err))
 		return
 	}
 	log.Info(spanCtx,"User Found")

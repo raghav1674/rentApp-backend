@@ -56,14 +56,10 @@ func (a *authService) Login(ctx context.Context, loginRequest dto.LoginRequest) 
 		}
 	}
 
-	userRole := ctx.Value("user_role").(string)
 
-	if userRole != "" {
-		log.Info(spanCtx, "User role  found in context")
-	} else {
-		log.Info(spanCtx, "User role not found in context, fetching from database.")
-		userRole = string(user.CurrentRole)
-	}
+	log.Info(spanCtx, "User role not found in context, fetching from database.")
+	
+	userRole := string(user.CurrentRole)
 
 	log.Info(spanCtx,fmt.Sprintf("User role: %s", userRole))
 

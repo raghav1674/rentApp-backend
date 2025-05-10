@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"fmt"
 	"net/http"
 	"sample-web/services"
 	"sample-web/utils"
@@ -37,7 +38,7 @@ func JWTAuthMiddleware(jwtService services.JWTService) gin.HandlerFunc {
 
 		ctx.Set("user_id", customClaims.UserId)
 		ctx.Set("current_role", customClaims.CurrentRole)
-
+		fmt.Print("User ID: ", customClaims.UserId)
 		ctx.Next()
 	}
 }
