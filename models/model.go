@@ -65,12 +65,15 @@ type Rent struct {
 	Id        bson.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	LandLord  PersonRef     `bson:"landlord" json:"landlord"`
 	Tenant    PersonRef     `bson:"tenant" json:"tenant"`
-	Location  string        `bson:"location" json:"location"`
+	Title     string        `bson:"title" json:"title"`
 	Amount    float64       `bson:"amount" json:"amount"`
 	Schedule  RentSchedule  `bson:"schedule" json:"schedule"`
 	Status    RentStatus    `bson:"status" json:"status"`
+	StartDate time.Time     `bson:"start_date" json:"start_date"`
+	EndDate   time.Time     `bson:"end_date" json:"end_date"`
 	CreatedAt time.Time     `bson:"created_at" json:"created_at"`
 	UpdatedAt time.Time     `bson:"updated_at" json:"updated_at"`
+
 }
 
 type RentRecord struct {

@@ -63,7 +63,7 @@ func (r *rentService) CreateRent(ctx context.Context, rentRequest dto.RentReques
 			Id:   tenant.Id,
 			Name: tenant.Name,
 		},
-		Location: rentRequest.Location,
+		Title: rentRequest.Title,
 		Amount:   rentRequest.Amount,
 		Schedule: models.RentSchedule(rentRequest.Schedule),
 		Status:   models.RentStatusActive,
@@ -142,8 +142,8 @@ func (r *rentService) UpdateRent(ctx context.Context, rentId string, rentRequest
 		return dto.RentResponse{}, errors.New("rent is already closed")
 	}
 
-	if rentRequest.Location != "" {
-		rent.Location = rentRequest.Location
+	if rentRequest.Title != "" {
+		rent.Title = rentRequest.Title
 	}
 	if rentRequest.Amount != 0 {
 		rent.Amount = rentRequest.Amount
