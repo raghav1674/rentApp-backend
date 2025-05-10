@@ -32,7 +32,7 @@ func main() {
 	redisConfig := appConfigs.GetRedisConfig()
 	jwtConfig := appConfigs.GetJWTConfig()
 	tracingConfig := appConfigs.GetTracingConfig()
-	// twilioConfig := appConfigs.GetTwilioConfig()
+	twilioConfig := appConfigs.GetTwilioConfig()
 	
 
 	utils.InitLogger(tracingConfig)
@@ -57,8 +57,8 @@ func main() {
 		jwtConfig.RefreshTokenExpirationInSeconds)
 
 	// Initialize OTP service
-	// otpService := services.NewTwilioClient(twilioConfig)
-	otpService := services.NewDummyOTPService(redisClient)
+	otpService := services.NewTwilioOTPService(twilioConfig,redisClient)
+	// otpService := services.NewDummyOTPService(redisClient)
 
 	// Initialize the user repository, service, and controller
 	userRepo := repositories.NewUserRepository(mongoClient.Database)

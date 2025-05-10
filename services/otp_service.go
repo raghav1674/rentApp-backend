@@ -2,17 +2,19 @@ package services
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"sample-web/clients"
 	"sample-web/configs"
-	"sample-web/utils"
+	"strconv"
+	"time"
 
+	"github.com/redis/go-redis/v9"
 	"github.com/twilio/twilio-go"
 	verify "github.com/twilio/twilio-go/rest/verify/v2"
 )
 
 const (
-	twilioChanelSMS = "sms"
+	twilioChannelSMS = "sms"
 )
 
 const (
@@ -24,85 +26,110 @@ type OTPService interface {
 	VerifyOTP(ctx context.Context, phoneNumber string, code string) (bool, error)
 }
 
-type twilioService struct {
-	client *twilio.RestClient
-	config configs.TwilioConfig
+
+type twilioOtpService struct {
+	client      *twilio.RestClient
+	config      configs.TwilioConfig
+	redisClient *clients.RedisClient
+	expiry      time.Duration
 }
 
-func (t *twilioService) SendOTP(ctx context.Context, phoneNumber string) (string, error) {
+func NewTwilioOTPService(cfg configs.TwilioConfig, redisClient *clients.RedisClient) OTPService {
+	twilioClient := twilio.NewRestClientWithParams(twilio.ClientParams{
+		Username: cfg.AccountSID,
+		Password: cfg.AuthToken,
+	})
+	return &twilioOtpService{
+		client:      twilioClient,
+		config:      cfg,
+		redisClient: redisClient,
+		expiry:      expiryTimeInMinutes * time.Minute,
+	}
+}
 
-	log := utils.GetLogger()
+func (s *twilioOtpService) SendOTP(ctx context.Context, phoneNumber string) (string, error) {
+	retryKey := s.buildRetryKey(phoneNumber)
 
-	spanCtx, span := log.Tracer().Start(ctx, "twilioService.SendOTP")
-	defer span.End()
-
-	log.Info(spanCtx, fmt.Sprintf("SendOTP Request receieved for phone number %s", phoneNumber))
+	if blocked, ttl := s.isBlocked(ctx, retryKey); blocked {
+		return "", &PhoneNumberBlockedError{PhoneNumber: phoneNumber, RetryAfter: ttl}
+	}
 
 	params := &verify.CreateVerificationParams{}
 	params.SetTo(phoneNumber)
-	params.SetChannel(twilioChanelSMS)
+	params.SetChannel(twilioChannelSMS)
 
-	log.Info(spanCtx, fmt.Sprintf("SendingOTP to %s", phoneNumber))
-
-	resp, err := t.client.VerifyV2.CreateVerification(t.config.ServiceSID, params)
-
+	resp, err := s.client.VerifyV2.CreateVerification(s.config.ServiceSID, params)
 	if err != nil {
-		log.Error(spanCtx, err.Error())
+		s.incrementRetry(ctx, retryKey)
 		return "", err
 	}
 
-	verificationSid := *resp.Sid
-	verificationStatus := *resp.Status
-
-	log.Info(spanCtx, fmt.Sprintf("OTP Sent to %s with verification_sid as %s and status %s", phoneNumber, verificationSid, verificationStatus))
-
-	return verificationSid, nil
+	return *resp.Sid, nil
 }
 
-func (t *twilioService) VerifyOTP(ctx context.Context, phoneNumber string, code string) (bool, error) {
+func (s *twilioOtpService) VerifyOTP(ctx context.Context, phoneNumber, code string) (bool, error) {
+	retryKey := s.buildRetryKey(phoneNumber)
 
-	log := utils.GetLogger()
-
-	spanCtx, span := log.Tracer().Start(ctx, "twilioService.VerifyOTP")
-	defer span.End()
-
-	log.Info(spanCtx, fmt.Sprintf("VerifyOTP request received for phone number %s", phoneNumber))
+	if blocked, ttl := s.isBlocked(ctx, retryKey); blocked {
+		return false, &PhoneNumberBlockedError{PhoneNumber: phoneNumber, RetryAfter: ttl}
+	}
 
 	params := &verify.CreateVerificationCheckParams{}
 	params.SetTo(phoneNumber)
 	params.SetCode(code)
 
-	log.Info(spanCtx, "Verifying OTP")
-
-	resp, err := t.client.VerifyV2.CreateVerificationCheck(t.config.ServiceSID, params)
-
+	resp, err := s.client.VerifyV2.CreateVerificationCheck(s.config.ServiceSID, params)
 	if err != nil {
-		log.Error(spanCtx, fmt.Sprintf("Error Verifying OTP with error %s", err.Error()))
+		s.incrementRetry(ctx, retryKey)
 		return false, err
 	}
 
-	verificationSid := *resp.Sid
-	verificationStatus := *resp.Status
-
-	if *resp.Status != twilioStatusApproved {
-		log.Error(spanCtx, fmt.Sprintf("OTP Verification failed for %s with verification_sid as %s and status %s", phoneNumber, verificationSid, verificationStatus))
-		return false, errors.New("verification failed")
+	if resp.Status == nil || *resp.Status != twilioStatusApproved {
+		count := s.incrementRetry(ctx, retryKey)
+		if count >= totalRetries {
+			return false, &PhoneNumberBlockedError{PhoneNumber: phoneNumber, RetryAfter: s.expiry}
+		}
+		remaining := totalRetries - count
+		return false, fmt.Errorf("invalid OTP, %d attempt(s) remaining", remaining)
 	}
 
-	log.Info(spanCtx, fmt.Sprintf("OTP Verification Succeeded for %s with verification_sid as %s and status %s", phoneNumber, verificationSid, verificationStatus))
-
+	// Clear retry key on success
+	_ = s.redisClient.Client.Del(ctx, retryKey).Err()
 	return true, nil
 }
 
-func NewTwilioClient(config configs.TwilioConfig) OTPService {
-	client := twilio.NewRestClientWithParams(
-		twilio.ClientParams{
-			Username: config.AccountSID,
-			Password: config.AuthToken,
-		},
-	)
-	return &twilioService{
-		client: client,
-		config: config,
+func (s *twilioOtpService) buildRetryKey(phone string) string {
+	return fmt.Sprintf("otp:%s:%s", phone, retryKeySuffix)
+}
+
+func (s *twilioOtpService) isBlocked(ctx context.Context, retryKey string) (bool, time.Duration) {
+	count, err := s.getRetryCount(ctx, retryKey)
+	if err != nil {
+		return false, 0
 	}
+	if count >= totalRetries {
+		ttl, _ := s.redisClient.Client.TTL(ctx, retryKey).Result()
+		return true, ttl
+	}
+	return false, 0
+}
+
+func (s *twilioOtpService) getRetryCount(ctx context.Context, retryKey string) (int, error) {
+	countStr, err := s.redisClient.Client.Get(ctx, retryKey).Result()
+	if err == redis.Nil {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(countStr)
+}
+
+func (s *twilioOtpService) incrementRetry(ctx context.Context, retryKey string) int {
+	pipe := s.redisClient.Client.TxPipeline()
+	count := pipe.Incr(ctx, retryKey)
+	pipe.Expire(ctx, retryKey, s.expiry)
+	pipe.Exec(ctx)
+	c, _ := count.Result()
+	return int(c)
 }
