@@ -47,14 +47,14 @@ func (a *authController) GenerateOTP(ctx *gin.Context) {
 		return
 	}
 
-	_, err := a.otpService.SendOTP(spanCtx, otpRequest.PhoneNumber)
+	otp_identifier, err := a.otpService.SendOTP(spanCtx, otpRequest.PhoneNumber)
 	if err != nil {
 		log.Error(spanCtx, fmt.Sprintf("failed to generate OTP with error %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "failed to generate OTP", err))
 		return
 	}
 
-	ctx.JSON(http.StatusOK, gin.H{"message": "OTP sent successfully"})
+	ctx.JSON(http.StatusOK, gin.H{"message": "OTP sent successfully","identifier": otp_identifier })
 }
 
 func (a *authController) VerifyOTP(ctx *gin.Context) {
@@ -80,7 +80,7 @@ func (a *authController) VerifyOTP(ctx *gin.Context) {
 
 	if err != nil {
 		log.Error(spanCtx, fmt.Sprintf("failed to verify OTP with error %s", err.Error()))
-		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "failed to verify OTP", err))
+		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "failed to verify OTP",err))
 		return
 	}
 	if !isValid {
@@ -91,11 +91,14 @@ func (a *authController) VerifyOTP(ctx *gin.Context) {
 
 	log.Info(spanCtx, "OTP verified successfully")
 
+	log.Info(spanCtx,fmt.Sprintf("Checking if user already exists and generate access and refresh tokesn for user with phoneNumber %s",otpRequest.PhoneNumber))
+
 	authResponse, err := a.authService.Login(spanCtx, dto.LoginRequest{
 		PhoneNumber: otpRequest.PhoneNumber,
 	})
 
 	if err == nil {
+		log.Info(spanCtx,"User found")
 		ctx.JSON(http.StatusOK, gin.H{
 			"otp_verified":    true,
 			"user_registered": true,
@@ -106,10 +109,12 @@ func (a *authController) VerifyOTP(ctx *gin.Context) {
 		return
 	}
 
+	log.Info(spanCtx,fmt.Sprintf("no user found with phone number %s",otpRequest.PhoneNumber))
+	
 	ctx.JSON(http.StatusOK, gin.H{
 		"otp_verified":    true,
 		"user_registered": false,
-		"error":           false,
+		"error":           err.Error(),
 	})
 }
 
@@ -136,5 +141,24 @@ func (a *authController) Register(ctx *gin.Context) {
 	}
 
 	log.Info(spanCtx, "User registered")
-	ctx.JSON(http.StatusOK, user)
+
+	log.Info(spanCtx,fmt.Sprintf("Generating access and refresh tokesn for user %s",user.Id))
+
+	authResponse, err := a.authService.Login(spanCtx, dto.LoginRequest{
+		PhoneNumber: user.PhoneNumber,
+	})
+
+	if err != nil {
+		log.Error(spanCtx,fmt.Sprintf("failed to generate access token for user %s with error %s",user.Id,err.Error()))
+		ctx.Error(customerr.NewAppError(http.StatusInternalServerError,"failed to generate access token",err))
+		return
+	}
+
+	log.Info(spanCtx,fmt.Sprintf("Generated Access/Refresh token for user %s",user.Id))
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"access_token":    authResponse.AccessToken,
+		"refresh_token":   authResponse.RefreshToken,
+		"user": user,
+	})
 }

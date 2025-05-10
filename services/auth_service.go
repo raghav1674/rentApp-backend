@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sample-web/dto"
 	"sample-web/mappers"
 	"sample-web/models"
@@ -46,7 +47,7 @@ func (a *authService) Login(ctx context.Context, loginRequest dto.LoginRequest) 
 	user, err := a.userRepo.FindUserByPhoneNumber(ctx, loginRequest.PhoneNumber)
 
 	if err != nil {
-		span.RecordError(err)
+		log.Error(spanCtx, err.Error())
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			log.Info(spanCtx, "User not found")
 			return dto.AuthResponse{}, errors.New("user not found")
@@ -55,15 +56,26 @@ func (a *authService) Login(ctx context.Context, loginRequest dto.LoginRequest) 
 		}
 	}
 
+	userRole := ctx.Value("user_role").(string)
+
+	if userRole != "" {
+		log.Info(spanCtx, "User role  found in context")
+	} else {
+		log.Info(spanCtx, "User role not found in context, fetching from database.")
+		userRole = string(user.CurrentRole)
+	}
+
+	log.Info(spanCtx,fmt.Sprintf("User role: %s", userRole))
+
 	claims := CustomClaims{
 		UserId:      user.Id.Hex(),
-		CurrentRole: loginRequest.CurrentRole,
+		CurrentRole: userRole,
 	}
 
 	authResponse, err := a.jwtService.GenerateToken(ctx, claims)
 
 	if err != nil {
-		span.RecordError(err)
+		log.Error(spanCtx, err.Error())
 		return authResponse, err
 	}
 
@@ -120,7 +132,7 @@ func (a *authService) Register(ctx context.Context, registerRequest dto.Register
 	user := models.User{
 		Name:        registerRequest.Name,
 		PhoneNumber: registerRequest.PhoneNumber,
-		Roles:       mappers.ToUserRoles(registerRequest.Roles),
+		CurrentRole: mappers.ToUserRole(registerRequest.CurrentRole),
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}

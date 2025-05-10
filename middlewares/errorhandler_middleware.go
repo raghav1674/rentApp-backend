@@ -29,10 +29,10 @@ func ErrorHandler() gin.HandlerFunc {
 		var appErr *customerr.AppError
 		if errors.As(lastErr, &appErr) {
 			span.AddEvent("returning AppError")
-			ctx.JSON(appErr.Code, gin.H{"error": appErr.Message})
+			ctx.JSON(appErr.Code, gin.H{"error_message": appErr.Message, "error": appErr.Err.Error()})
 			return
 		}
 		span.AddEvent("returning generic error")
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error"})
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error_message": "internal server error"})
 	}
 }

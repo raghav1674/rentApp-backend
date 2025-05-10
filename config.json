@@ -1,10 +1,15 @@
 {
     "env": "development",
     "mongo": {
-        "uri": "mongodb+srv://cluster0.wpsfzei.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
-        "database": "devdb2",
+        "uri": "mongodb://localhost:27017",
+        "database": "devdb",
         "authSource": "admin",
         "timeout_in_seconds": 30
+    },
+    "redis": {
+        "address": "localhost:6379",
+        "database": 0,
+        "timeout_in_seconds": 10
     },
     "jwt": {
         "issuer_name": "sample-app",

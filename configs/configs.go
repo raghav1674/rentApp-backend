@@ -12,6 +12,7 @@ type Config struct {
 	Env     string        `json:"env"`
 	Tracing TracingConfig `json:"tracing"`
 	Twilio  TwilioConfig  `json:"twilio"`
+	Redis   RedisConfig   `json:"redis"`
 }
 
 func LoadConfig(configPath string) (*Config, error) {
@@ -47,6 +48,11 @@ func LoadConfig(configPath string) (*Config, error) {
 	if err := cfg.Twilio.LoadAndValidate(); err != nil {
 		return nil, err
 	}
+
+	if err := cfg.Redis.LoadAndValidate(); err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
 }
 
@@ -81,6 +87,15 @@ func (config *Config) GetTwilioConfig() TwilioConfig {
 	}
 	return config.Twilio
 }
+
+// GetRedisConfig returns the Redis configuration
+func (config *Config) GetRedisConfig() RedisConfig {
+	if config == nil {
+		panic("Config not loaded. Call LoadConfig() first.")
+	}
+	return config.Redis
+}
+
 
 // GetEnv returns the value of the environment
 func (config *Config) GetEnvironment() string {

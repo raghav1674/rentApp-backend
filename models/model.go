@@ -48,6 +48,7 @@ type User struct {
 	CreatedAt    time.Time     `bson:"created_at" json:"created_at"`
 	UpdatedAt    time.Time     `bson:"updated_at" json:"updated_at"`
 	RefreshToken RefreshToken  `bson:"refresh_token" json:"refresh_token"`
+	CurrentRole  UserRole      `bson:"current_role" json:"current_role"`
 }
 
 type PersonRef struct {

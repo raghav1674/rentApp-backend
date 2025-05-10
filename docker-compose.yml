@@ -1,5 +1,4 @@
 services:
-
   mongo:
     image: mongo
     restart: always
@@ -8,3 +7,19 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
     ports:
     - 27017:27017
+
+  redis:
+    image: redis
+    restart: always
+    ports:
+    - 6379:6379
+
+  jaeger-collector:
+    image: jaegertracing/all-in-one
+    restart: always
+    ports:
+    - 16686:16686
+    - 4317:4317
+    - 14268:14268
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"

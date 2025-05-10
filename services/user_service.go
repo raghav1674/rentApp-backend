@@ -53,7 +53,7 @@ func (u *userService) UpdateUser(ctx context.Context, userRequestDto dto.UserReq
 		return dto.UserResponse{}, err
 	}
 	user.PhoneNumber = userRequestDto.PhoneNumber
-	user.Roles = mappers.ToUserRoles(userRequestDto.Roles)
+	user.CurrentRole = mappers.ToUserRole(userRequestDto.CurrentRole)
 	user.UpdatedAt = time.Now()
 	updatedUser, err := u.userRepo.UpdateUser(ctx, user)
 	if err != nil {

@@ -6,6 +6,17 @@ import (
 	"time"
 )
 
+func ToUserRole(role string) models.UserRole {
+	switch role {
+	case string(models.LandLord):
+		return models.LandLord
+	case string(models.Tenant):
+		return models.Tenant
+	default:
+		return models.Tenant
+	}
+}
+
 func ToUserRoles(roles []string) []models.UserRole {
 	if len(roles) == 0 {
 		roles = []string{string(models.LandLord), string(models.Tenant)}
@@ -29,7 +40,7 @@ func ToUserModel(dto dto.UserRequest) models.User {
 	now := time.Now()
 	return models.User{
 		PhoneNumber: dto.PhoneNumber,
-		Roles:       ToUserRoles(dto.Roles),
+		Roles:       ToUserRoles([]string{}),
 		CreatedAt:   now,
 		UpdatedAt:   now,
 	}
@@ -40,8 +51,5 @@ func ToUserResponse(model models.User) dto.UserResponse {
 		Id:          model.Id.Hex(),
 		Name:        model.Name,
 		PhoneNumber: model.PhoneNumber,
-		Roles:       ToUserRolesString(model.Roles),
-		CreatedAt:   model.CreatedAt.Format(time.RFC3339),
-		UpdatedAt:   model.UpdatedAt.Format(time.RFC3339),
 	}
 }

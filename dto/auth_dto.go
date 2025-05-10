@@ -2,7 +2,6 @@ package dto
 
 type LoginRequest struct {
 	PhoneNumber string `json:"phone_number" binding:"required,e164"`
-	CurrentRole string `json:"current_role" binding:"required,oneof=landlord tenant"`
 }
 
 type AuthResponse struct {
@@ -13,7 +12,7 @@ type AuthResponse struct {
 type RegisterRequest struct {
 	Name        string   `json:"name" binding:"required,min=1"`
 	PhoneNumber string   `json:"phone_number" binding:"required,e164"`
-	Roles       []string `json:"roles"`
+	CurrentRole string    `json:"current_role" binding:"required,oneof=landlord tenant"`
 }
 
 type RefreshTokenRequest struct {

@@ -38,28 +38,15 @@ func SetupRouter(
 				userRoutes.POST("", userController.GetUserByPhoneNumber)
 				userRoutes.PUT("", userController.UpdateUser)
 			}
-			landlordRoutes := protectedRoutes.Group("/landlords")
-			landlordRoutes.Use(middlewares.RoleCheckMiddleware(string(models.LandLord)))
-			{
-				landlordRoutes.POST("", userController.GetUserByPhoneNumber)
-				landlordRentRoutes := landlordRoutes.Group("/rents")
-				{
-					landlordRentRoutes.POST("", rentController.CreateRent)
-					landlordRentRoutes.GET("", rentController.GetAllRents)
-					landlordRentRoutes.GET("/:rent_id", rentController.GetRentById)
-					landlordRentRoutes.PUT("/:rent_id", rentController.UpdateRent)
-					landlordRentRoutes.DELETE("/:rent_id", rentController.CloseRent)
-				}
-			}
 
-			tenantRoutes := protectedRoutes.Group("/tenants")
-			tenantRoutes.Use(middlewares.RoleCheckMiddleware(string(models.Tenant)))
+			rentRoutes := protectedRoutes.Group("/rents")
+			landLordCheckMiddleWare := middlewares.RoleCheckMiddleware(string(models.LandLord))
 			{
-				tenantRentRoutes := tenantRoutes.Group("/rents")
-				{
-					tenantRentRoutes.GET("", rentController.GetAllRents)
-					tenantRentRoutes.GET("/:rent_id", rentController.GetRentById)
-				}
+				rentRoutes.POST("",landLordCheckMiddleWare, rentController.CreateRent)
+				rentRoutes.DELETE("/:rent_id",landLordCheckMiddleWare, rentController.CloseRent)
+				rentRoutes.PUT("/:rent_id",landLordCheckMiddleWare, rentController.UpdateRent)
+				rentRoutes.GET("", rentController.GetAllRents)
+				rentRoutes.GET("/:rent_id", rentController.GetRentById)
 			}
 		}
 	}
