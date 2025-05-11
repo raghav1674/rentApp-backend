@@ -11,11 +11,9 @@ import (
 	"sample-web/utils"
 )
 
-
 const (
 	defaultConfigPath = "config.json"
 )
-
 
 func main() {
 
@@ -32,8 +30,7 @@ func main() {
 	redisConfig := appConfigs.GetRedisConfig()
 	jwtConfig := appConfigs.GetJWTConfig()
 	tracingConfig := appConfigs.GetTracingConfig()
-	twilioConfig := appConfigs.GetTwilioConfig()
-	
+	// twilioConfig := appConfigs.GetTwilioConfig()
 
 	utils.InitLogger(tracingConfig)
 
@@ -48,7 +45,6 @@ func main() {
 		panic(err)
 	}
 
-
 	// Initialize JWT service
 	jwtService := services.NewJWTService(jwtConfig.IssuerName,
 		jwtConfig.SecretKey,
@@ -57,8 +53,8 @@ func main() {
 		jwtConfig.RefreshTokenExpirationInSeconds)
 
 	// Initialize OTP service
-	otpService := services.NewTwilioOTPService(twilioConfig,redisClient)
-	// otpService := services.NewDummyOTPService(redisClient)
+	// otpService := services.NewTwilioOTPService(twilioConfig, redisClient)
+	otpService := services.NewDummyOTPService(redisClient)
 
 	// Initialize the user repository, service, and controller
 	userRepo := repositories.NewUserRepository(mongoClient.Database)
@@ -71,12 +67,16 @@ func main() {
 
 	// Initialize rent repository, service, and controller
 	rentRepo := repositories.NewRentRepository(mongoClient.Database)
-	rentService := services.NewRentService(rentRepo,userRepo)
+	rentService := services.NewRentService(rentRepo, userRepo)
 	rentController := controllers.NewRentController(rentService)
 
+	// initialize rent record	repository, service, and controller
+	rentRecordRepo := repositories.NewRentRecordRepository(mongoClient.Database)
+	rentRecordService := services.NewRentRecordService(rentRecordRepo, userRepo)
+	rentRecordController := controllers.NewRentRecordController(rentRecordService)
 
 	// Set up router with all routes
-	r := routes.SetupRouter(userController, authController, rentController,jwtService)
+	r := routes.SetupRouter(userController, authController, rentController, rentRecordController,jwtService)
 	// Start the server
 	r.Run(":8080")
 }

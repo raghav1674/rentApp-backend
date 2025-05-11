@@ -60,19 +60,19 @@ func (s *dummyOtpService) VerifyOTP(ctx context.Context, phoneNumber, code strin
 
 	retryKey := s.buildRetryKey(phoneNumber)
 
-	isBlocked, ttl := s.isBlocked(ctx, retryKey) 
+	isBlocked, ttl := s.isBlocked(ctx, retryKey)
 	if isBlocked {
 		return false, &PhoneNumberBlockedError{PhoneNumber: phoneNumber, RetryAfter: ttl}
 	}
 
 	otp, err := s.redisClient.Client.Get(ctx, phoneNumber).Result()
 	if err != nil {
-		if err == redis.Nil{
+		if err == redis.Nil {
 			return false, fmt.Errorf("OTP not found or expired")
 		}
 		return false, err
 	}
-	
+
 	if otp != code {
 		pipe := s.redisClient.Client.TxPipeline()
 		pipe.Incr(ctx, retryKey)
@@ -86,7 +86,6 @@ func (s *dummyOtpService) VerifyOTP(ctx context.Context, phoneNumber, code strin
 
 		return false, fmt.Errorf("invalid OTP, %d attempt(s) remaining", remaining)
 	}
-
 
 	pipe := s.redisClient.Client.TxPipeline()
 	pipe.Del(ctx, phoneNumber, retryKey)
@@ -121,4 +120,3 @@ func (s *dummyOtpService) getRetryCount(ctx context.Context, retryKey string) in
 	count, _ := strconv.Atoi(countStr)
 	return count
 }
-

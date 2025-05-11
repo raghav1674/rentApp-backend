@@ -19,7 +19,6 @@ type userService struct {
 	userRepo repositories.UserRepository
 }
 
-
 func NewUserService(userRepo repositories.UserRepository) UserService {
 	return &userService{
 		userRepo: userRepo,
@@ -36,7 +35,6 @@ func (u *userService) CreateUser(ctx context.Context, userRequestDto dto.UserReq
 	return userResponse, nil
 }
 
-
 func (u *userService) GetUserByPhoneNumber(ctx context.Context, phoneNumber string) (dto.UserResponse, error) {
 	user, err := u.userRepo.FindUserByPhoneNumber(ctx, phoneNumber)
 	if err != nil {
@@ -45,7 +43,6 @@ func (u *userService) GetUserByPhoneNumber(ctx context.Context, phoneNumber stri
 	userResponse := mappers.ToUserResponse(user)
 	return userResponse, nil
 }
-
 
 func (u *userService) UpdateUser(ctx context.Context, userRequestDto dto.UserRequest) (dto.UserResponse, error) {
 	user, err := u.userRepo.FindUserByPhoneNumber(ctx, userRequestDto.PhoneNumber)

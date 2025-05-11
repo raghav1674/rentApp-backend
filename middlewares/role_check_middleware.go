@@ -11,13 +11,12 @@ func RoleCheckMiddleware(requiredRole string) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
 		log := utils.GetLogger()
-	
+
 		_, span := log.Tracer().Start(ctx.Request.Context(), "middlewares.RoleCheckMiddleware")
 		defer span.End()
-		
-	
-		currentRole, exists := ctx.Get("current_role") 
-		
+
+		currentRole, exists := ctx.Get("current_role")
+
 		if !exists {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Current role not found in "})
 			return

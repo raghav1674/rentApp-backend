@@ -14,6 +14,7 @@ func SetupRouter(
 	userController controllers.UserController,
 	authController controllers.AuthController,
 	rentController controllers.RentController,
+	rentRecordController controllers.RentRecordController,
 	jwtService services.JWTService,
 ) *gin.Engine {
 	router := gin.Default()
@@ -34,19 +35,28 @@ func SetupRouter(
 		{
 			userRoutes := protectedRoutes.Group("/users")
 			{
-				userRoutes.GET("/me",userController.GetCurrentUser)
+				userRoutes.GET("/me", userController.GetCurrentUser)
 				userRoutes.POST("", userController.GetUserByPhoneNumber)
 				userRoutes.PUT("", userController.UpdateUser)
 			}
 
-			rentRoutes := protectedRoutes.Group("/rents")
 			landLordCheckMiddleWare := middlewares.RoleCheckMiddleware(string(models.LandLord))
+			tenantCheckMiddleWare := middlewares.RoleCheckMiddleware(string(models.Tenant))
+
+			rentRoutes := protectedRoutes.Group("/rents")
 			{
-				rentRoutes.POST("",landLordCheckMiddleWare, rentController.CreateRent)
-				rentRoutes.DELETE("/:rent_id",landLordCheckMiddleWare, rentController.CloseRent)
-				rentRoutes.PUT("/:rent_id",landLordCheckMiddleWare, rentController.UpdateRent)
+				rentRoutes.POST("", landLordCheckMiddleWare, rentController.CreateRent)
+				rentRoutes.DELETE("/:rent_id", landLordCheckMiddleWare, rentController.CloseRent)
+				rentRoutes.PUT("/:rent_id", landLordCheckMiddleWare, rentController.UpdateRent)
 				rentRoutes.GET("", rentController.GetAllRents)
 				rentRoutes.GET("/:rent_id", rentController.GetRentById)
+			}
+			rentRecordRoutes := protectedRoutes.Group("/rents/:rent_id/records")
+			{
+				rentRecordRoutes.POST("",tenantCheckMiddleWare, rentRecordController.CreateRentRecord)
+				rentRecordRoutes.GET("", rentRecordController.GetAllRentRecords)
+				rentRecordRoutes.GET("/:record_id", rentRecordController.GetRentRecordById)
+				rentRecordRoutes.PUT("/:record_id/approve", landLordCheckMiddleWare, rentRecordController.ApproveRentRecord)				
 			}
 		}
 	}

@@ -14,9 +14,9 @@ import (
 
 type RentRepository interface {
 	CreateRent(ctx context.Context, rent models.Rent) (models.Rent, error)
-	FindRentById(ctx context.Context, rentId string) (models.Rent, error)
-	GetAllRents(ctx context.Context, userId string,userRole models.UserRole) ([]models.Rent, error)
-	UpdateRent(ctx context.Context, user models.Rent) (models.Rent, error)
+	FindRentById(ctx context.Context, userId string, rentId string) (models.Rent, error)
+	GetAllRents(ctx context.Context, userId string, userRole models.UserRole) ([]models.Rent, error)
+	UpdateRent(ctx context.Context,  userId string, rent models.Rent) (models.Rent, error)
 }
 
 type rentRepository struct {
@@ -54,14 +54,10 @@ func (rentRepository *rentRepository) CreateRent(ctx context.Context, rent model
 
 	log.Info(spanCtx, fmt.Sprintf("Rent created with ID: %s", id))
 
-
-
-	return rentRepository.FindRentById(ctx,id)
+	return rentRepository.FindRentById(ctx, rent.LandLord.Id.Hex(), id)
 }
 
-
-
-func (rentRepository *rentRepository) FindRentById(ctx context.Context, rentId string) (models.Rent, error) {
+func (rentRepository *rentRepository) FindRentById(ctx context.Context, userId string,rentId string) (models.Rent, error) {
 
 	log := utils.GetLogger()
 	_, span := log.Tracer().Start(ctx, "RentRepository.FindRentById")
@@ -82,7 +78,21 @@ func (rentRepository *rentRepository) FindRentById(ctx context.Context, rentId s
 		return models.Rent{}, err
 	}
 
-	err = rentsCollection.FindOne(ctx, bson.M{"_id": objectID}).Decode(&rent)
+	userObjectId, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		span.RecordError(err)
+		return models.Rent{}, err
+	}
+
+	query := bson.M{
+		"_id": objectID,
+		"$or": []bson.M{
+			{"landlord._id": userObjectId},
+			{"tenant._id": userObjectId},
+		},
+	}
+
+	err = rentsCollection.FindOne(ctx, query).Decode(&rent)
 
 	if err != nil {
 
@@ -95,7 +105,7 @@ func (rentRepository *rentRepository) FindRentById(ctx context.Context, rentId s
 	return rent, nil
 }
 
-func (rentRepository *rentRepository) GetAllRents(ctx context.Context, userId string, userRole models.UserRole) ([]models.Rent, error) {
+func (rentRepository *rentRepository) GetAllRents(ctx context.Context, userId string,userRole models.UserRole) ([]models.Rent, error) {
 
 	log := utils.GetLogger()
 
@@ -108,7 +118,6 @@ func (rentRepository *rentRepository) GetAllRents(ctx context.Context, userId st
 		attribute.String("collection", "rents"),
 		attribute.String("operation", "find"),
 		attribute.String("user_id", userId),
-		attribute.String("user_role", string(userRole)),
 	))
 
 	userObjectId, err := bson.ObjectIDFromHex(userId)
@@ -120,7 +129,7 @@ func (rentRepository *rentRepository) GetAllRents(ctx context.Context, userId st
 	var query interface{}
 
 	if userRole == models.LandLord {
-		query = bson.M{"landlord._id":userObjectId }
+		query = bson.M{"landlord._id": userObjectId}
 	} else {
 		query = bson.M{"tenant._id": userObjectId}
 	}
@@ -145,8 +154,7 @@ func (rentRepository *rentRepository) GetAllRents(ctx context.Context, userId st
 	return rents, nil
 }
 
-
-func (rentRepository *rentRepository) UpdateRent(ctx context.Context, rent models.Rent) (models.Rent, error) {
+func (rentRepository *rentRepository) UpdateRent(ctx context.Context,userId string, rent models.Rent) (models.Rent, error) {
 
 	_, span := utils.Tracer().Start(ctx, "RentRepository.UpdateRent")
 	defer span.End()
@@ -159,10 +167,27 @@ func (rentRepository *rentRepository) UpdateRent(ctx context.Context, rent model
 		attribute.String("_id", rent.Id.Hex()),
 	))
 
-	_, err := rentsCollection.UpdateOne(ctx, bson.M{"_id": rent.Id}, bson.M{"$set": rent})
+	rentObjectId, err := bson.ObjectIDFromHex(rent.Id.Hex())
 	if err != nil {
 		span.RecordError(err)
 		return models.Rent{}, err
 	}
-	return rentRepository.FindRentById(ctx, rent.Id.Hex())
+
+	userObjectId, err := bson.ObjectIDFromHex(userId)
+	if err != nil {
+		span.RecordError(err)
+		return models.Rent{}, err
+	}
+
+	query := bson.M{
+		"_id": rentObjectId,
+		"landlord._id": userObjectId,
+	}
+
+	_, err = rentsCollection.UpdateOne(ctx, query, bson.M{"$set": rent})
+	if err != nil {
+		span.RecordError(err)
+		return models.Rent{}, err
+	}
+	return rentRepository.FindRentById(ctx, userId, rent.Id.Hex())
 }

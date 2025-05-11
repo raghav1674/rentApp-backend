@@ -22,7 +22,7 @@ func (redis *RedisConfig) validate() error {
 	if redis.TimeoutInSeconds <= 0 {
 		return customerr.MissingConfigError{Message: "redis timeout_in_seconds must be greater than 0"}
 	}
-	
+
 	return nil
 }
 

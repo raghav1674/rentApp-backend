@@ -12,14 +12,14 @@ type RedisClient struct {
 	Client *redis.Client
 }
 
-func NewRedisClient(cfg configs.RedisConfig) (*RedisClient,error) {
+func NewRedisClient(cfg configs.RedisConfig) (*RedisClient, error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.TimeoutInSeconds)*time.Second)
 	defer cancel()
 
 	client := redis.NewClient(&redis.Options{
-		Addr:     cfg.Address,
-		DB:       cfg.Database,
+		Addr: cfg.Address,
+		DB:   cfg.Database,
 	})
 
 	err := client.Ping(ctx).Err()

@@ -24,7 +24,6 @@ type rentController struct {
 	rentService services.RentService
 }
 
-
 func NewRentController(rentService services.RentService) RentController {
 	return &rentController{
 		rentService: rentService,
@@ -38,17 +37,24 @@ func (r *rentController) CreateRent(ctx *gin.Context) {
 	spanCtx, span := log.Tracer().Start(ctx.Request.Context(), "RentController.CreateRent")
 	defer span.End()
 
+	landLordId, exists := ctx.Get("user_id")
+
+	if !exists {
+		log.Error(spanCtx, "Landlord ID is empty")
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "Landlord ID is empty", nil))
+	}
+
 	// Bind the request body to the RentRequest struct
 	var rentRequest dto.RentRequest
 	if err := ctx.ShouldBindJSON(&rentRequest); err != nil {
-		log.Error(spanCtx, fmt.Sprintf("Failed to bind request body with %s",err.Error()))
+		log.Error(spanCtx, fmt.Sprintf("Failed to bind request body with %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "Invalid request body", err))
 		return
 	}
 	// Call the service to create a new rent
-	rent, err := r.rentService.CreateRent(spanCtx, rentRequest)
+	rent, err := r.rentService.CreateRent(spanCtx, landLordId.(string), rentRequest)
 	if err != nil {
-		log.Error(spanCtx, fmt.Sprintf("Failed to create rent with %s",err.Error()))
+		log.Error(spanCtx, fmt.Sprintf("Failed to create rent with %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "Failed to create rent", err))
 		return
 	}
@@ -82,7 +88,7 @@ func (r *rentController) GetAllRents(ctx *gin.Context) {
 	// Call the service to get all rents
 	rents, err := r.rentService.GetAllRents(spanCtx, userId.(string), userRole.(string))
 	if err != nil {
-		log.Error(spanCtx, fmt.Sprintf("Failed to get rents with %s",err.Error()))
+		log.Error(spanCtx, fmt.Sprintf("Failed to get rents with %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "Failed to get rents", err))
 		return
 	}
@@ -99,6 +105,15 @@ func (r *rentController) GetRentById(ctx *gin.Context) {
 
 	spanCtx, span := log.Tracer().Start(ctx.Request.Context(), "RentController.GetRentById")
 	defer span.End()
+
+	userId, exists := ctx.Get("user_id")
+
+	if !exists {
+		log.Error(spanCtx, "User Id is empty")
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "User ID is empty", nil))
+	}
+
+
 	// Get the rent ID from the URL parameters
 	rentId := ctx.Param("rent_id")
 	if rentId == "" {
@@ -108,9 +123,9 @@ func (r *rentController) GetRentById(ctx *gin.Context) {
 	}
 
 	// Call the service to get the rent by ID
-	rent, err := r.rentService.GetRentById(spanCtx, rentId)
+	rent, err := r.rentService.GetRentById(spanCtx,userId.(string), rentId)
 	if err != nil {
-		log.Error(spanCtx, fmt.Sprintf("Failed to get rent with %s",err.Error()))
+		log.Error(spanCtx, fmt.Sprintf("Failed to get rent with %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "Failed to get rent", err))
 		return
 	}
@@ -128,6 +143,13 @@ func (r *rentController) UpdateRent(ctx *gin.Context) {
 	spanCtx, span := log.Tracer().Start(ctx.Request.Context(), "RentController.UpdateRent")
 	defer span.End()
 
+	landLordId, exists := ctx.Get("user_id")
+
+	if !exists {
+		log.Error(spanCtx, "Landlord Id is empty")
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "Landlord ID is empty", nil))
+	}
+
 	// Get the rent ID from the URL parameters
 	rentId := ctx.Param("rent_id")
 	if rentId == "" {
@@ -136,18 +158,18 @@ func (r *rentController) UpdateRent(ctx *gin.Context) {
 		return
 	}
 
-	// Bind the request body to the RentRequest struct
-	var rentRequest dto.RentRequest
-	if err := ctx.ShouldBindJSON(&rentRequest); err != nil {
-		log.Error(spanCtx, fmt.Sprintf("Failed to bind request body with %s",err.Error()))
+	// Bind the request body to the RentUpdateRequest struct
+	var rentUpdateRequest dto.RentUpdateRequest
+	if err := ctx.ShouldBindJSON(&rentUpdateRequest); err != nil {
+		log.Error(spanCtx, fmt.Sprintf("Failed to bind request body with %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "Invalid request body", err))
 		return
 	}
 
 	// Call the service to update the rent
-	rent, err := r.rentService.UpdateRent(spanCtx, rentId, rentRequest)
+	rent, err := r.rentService.UpdateRent(spanCtx,landLordId.(string), rentId, rentUpdateRequest)
 	if err != nil {
-		log.Error(spanCtx, fmt.Sprintf("Failed to update rent with %s",err.Error()))
+		log.Error(spanCtx, fmt.Sprintf("Failed to update rent with %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "Failed to update rent", err))
 		return
 	}
@@ -157,7 +179,6 @@ func (r *rentController) UpdateRent(ctx *gin.Context) {
 	ctx.JSON(200, rent)
 }
 
-
 // CloseRent implements RentController.
 func (r *rentController) CloseRent(ctx *gin.Context) {
 
@@ -165,6 +186,13 @@ func (r *rentController) CloseRent(ctx *gin.Context) {
 
 	spanCtx, span := log.Tracer().Start(ctx.Request.Context(), "RentController.CloseRent")
 	defer span.End()
+
+	landLordId, exists := ctx.Get("user_id")
+
+	if !exists {
+		log.Error(spanCtx, "Landlord Id is empty")
+		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "Landlord ID is empty", nil))
+	}
 
 
 	// Get the rent ID from the URL parameters
@@ -176,9 +204,9 @@ func (r *rentController) CloseRent(ctx *gin.Context) {
 	}
 
 	// Call the service to close the rent
-	rent, err := r.rentService.CloseRent(spanCtx, rentId)
+	rent, err := r.rentService.CloseRent(spanCtx,landLordId.(string), rentId)
 	if err != nil {
-		log.Error(spanCtx, fmt.Sprintf("Failed to close rent with %s",err.Error()))
+		log.Error(spanCtx, fmt.Sprintf("Failed to close rent with %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "Failed to close rent", err))
 		return
 	}
@@ -190,4 +218,3 @@ func (r *rentController) CloseRent(ctx *gin.Context) {
 func (r *rentController) SummariseRent(ctx *gin.Context) {
 	panic("unimplemented")
 }
-

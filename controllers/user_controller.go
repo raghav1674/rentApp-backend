@@ -11,25 +11,21 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-
 type UserController interface {
 	GetUserByPhoneNumber(ctx *gin.Context)
 	UpdateUser(ctx *gin.Context)
 	GetCurrentUser(ctx *gin.Context)
 }
 
-
 type userController struct {
 	userService services.UserService
 }
-
 
 func NewUserController(userService services.UserService) UserController {
 	return &userController{
 		userService: userService,
 	}
 }
-
 
 func (u *userController) GetUserByPhoneNumber(ctx *gin.Context) {
 
@@ -59,7 +55,6 @@ func (u *userController) GetUserByPhoneNumber(ctx *gin.Context) {
 	ctx.JSON(200, user)
 }
 
-
 func (u *userController) UpdateUser(ctx *gin.Context) {
 	var userRequestDto dto.UserRequest
 	if err := ctx.ShouldBindJSON(&userRequestDto); err != nil {
@@ -73,7 +68,6 @@ func (u *userController) UpdateUser(ctx *gin.Context) {
 	}
 	ctx.JSON(200, user)
 }
-
 
 func (u *userController) GetCurrentUser(ctx *gin.Context) {
 
@@ -100,6 +94,6 @@ func (u *userController) GetCurrentUser(ctx *gin.Context) {
 		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "user not found", err))
 		return
 	}
-	log.Info(spanCtx,"User Found")
+	log.Info(spanCtx, "User Found")
 	ctx.JSON(http.StatusOK, user)
 }

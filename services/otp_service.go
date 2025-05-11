@@ -14,7 +14,10 @@ import (
 )
 
 const (
-	twilioChannelSMS = "sms"
+	twilioChannelSMS          = "sms"
+	twilioTotalRetries        = 3
+	twilioRetryKeySuffix      = "twilio_invalid_attempts"
+	twilioExpiryTimeInMinutes = 10
 )
 
 const (
@@ -25,7 +28,6 @@ type OTPService interface {
 	SendOTP(ctx context.Context, phoneNumber string) (string, error)
 	VerifyOTP(ctx context.Context, phoneNumber string, code string) (bool, error)
 }
-
 
 type twilioOtpService struct {
 	client      *twilio.RestClient
@@ -43,7 +45,7 @@ func NewTwilioOTPService(cfg configs.TwilioConfig, redisClient *clients.RedisCli
 		client:      twilioClient,
 		config:      cfg,
 		redisClient: redisClient,
-		expiry:      expiryTimeInMinutes * time.Minute,
+		expiry:      twilioExpiryTimeInMinutes * time.Minute,
 	}
 }
 
@@ -99,7 +101,7 @@ func (s *twilioOtpService) VerifyOTP(ctx context.Context, phoneNumber, code stri
 }
 
 func (s *twilioOtpService) buildRetryKey(phone string) string {
-	return fmt.Sprintf("otp:%s:%s", phone, retryKeySuffix)
+	return fmt.Sprintf("otp:%s:%s", phone, twilioRetryKeySuffix)
 }
 
 func (s *twilioOtpService) isBlocked(ctx context.Context, retryKey string) (bool, time.Duration) {
@@ -107,7 +109,7 @@ func (s *twilioOtpService) isBlocked(ctx context.Context, retryKey string) (bool
 	if err != nil {
 		return false, 0
 	}
-	if count >= totalRetries {
+	if count >= twilioTotalRetries {
 		ttl, _ := s.redisClient.Client.TTL(ctx, retryKey).Result()
 		return true, ttl
 	}

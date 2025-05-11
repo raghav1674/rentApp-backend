@@ -88,16 +88,17 @@ func (l *logrusWrapper) logWithTrace(ctx context.Context, level logrus.Level, ar
 		}
 		l.logger.WithFields(fields).Log(level, msg)
 
-		// Add message as event to span
-		span.AddEvent("log", trace.WithAttributes(
-			attribute.String("log.severity", level.String()),
-			attribute.String("log.message", msg),
-		))
-
 		// Record error if log level is error or higher
 		if level == logrus.ErrorLevel {
 			span.RecordError(errors.New(msg))
+		} else {
+			// Add message as event to span
+			span.AddEvent("log", trace.WithAttributes(
+				attribute.String("log.severity", level.String()),
+				attribute.String("log.message", msg),
+			))
 		}
+		
 	} else {
 		l.logger.Log(level, msg)
 	}

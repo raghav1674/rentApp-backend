@@ -20,8 +20,9 @@ const (
 )
 
 const (
-	Monthly   RentSchedule = "monthly"
-	BiMonthly RentSchedule = "bimonthly"
+	RentScheduleWeekly    RentSchedule = "weekly"
+	RentScheduleMonthly   RentSchedule = "monthly"
+	RentScheduleQuarterly RentSchedule = "quarterly"
 )
 
 const (
@@ -73,7 +74,6 @@ type Rent struct {
 	EndDate   time.Time     `bson:"end_date" json:"end_date"`
 	CreatedAt time.Time     `bson:"created_at" json:"created_at"`
 	UpdatedAt time.Time     `bson:"updated_at" json:"updated_at"`
-
 }
 
 type RentRecord struct {

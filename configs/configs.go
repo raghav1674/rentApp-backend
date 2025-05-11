@@ -96,7 +96,6 @@ func (config *Config) GetRedisConfig() RedisConfig {
 	return config.Redis
 }
 
-
 // GetEnv returns the value of the environment
 func (config *Config) GetEnvironment() string {
 	if config == nil {
