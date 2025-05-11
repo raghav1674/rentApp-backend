@@ -56,7 +56,7 @@ func SetupRouter(
 				rentRecordRoutes.POST("",tenantCheckMiddleWare, rentRecordController.CreateRentRecord)
 				rentRecordRoutes.GET("", rentRecordController.GetAllRentRecords)
 				rentRecordRoutes.GET("/:record_id", rentRecordController.GetRentRecordById)
-				rentRecordRoutes.PUT("/:record_id/approve", landLordCheckMiddleWare, rentRecordController.ApproveRentRecord)				
+				rentRecordRoutes.POST("/:record_id/approve", landLordCheckMiddleWare, rentRecordController.ApproveRentRecord)				
 			}
 		}
 	}
