@@ -12,6 +12,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /rentapp
 
 FROM alpine:latest
 
+COPY --from=builder /app/config.json /config.json
+
 COPY --from=builder /rentapp /rentapp
 
 USER 1000
