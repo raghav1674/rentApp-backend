@@ -22,6 +22,11 @@ func NewRedisClient(cfg configs.RedisConfig) (*RedisClient, error) {
 		DB:   cfg.Database,
 	})
 
+	if cfg.AuthEnabled {
+		client.Options().Username = cfg.Username
+		client.Options().Password = cfg.Password
+	}
+
 	err := client.Ping(ctx).Err()
 
 	if err != nil {

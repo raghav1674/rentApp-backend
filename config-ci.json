@@ -1,24 +1,24 @@
 {
-    "env": "development",
+    "env": "ci",
     "mongo": {
-        "uri": "mongodb://localhost:27017",
+        "uri": "mongodb+srv://cluster0.wpsfzei.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
         "database": "devdb",
         "authSource": "admin",
         "timeout_in_seconds": 30
     },
     "redis": {
-        "address": "localhost:6379",
+        "address": "redis-18162.c301.ap-south-1-1.ec2.redns.redis-cloud.com:18162",
         "database": 0,
         "timeout_in_seconds": 10,
-        "auth_enabled": false
+        "auth_enabled": true
     },
     "jwt": {
-        "issuer_name": "sample-app",
+        "issuer_name": "rent-app",
         "expiration_in_seconds": 3600,
         "refresh_token_expiration_in_seconds": 7776000
     },
     "tracing": {
-        "service_name": "sample-app",
+        "service_name": "rent-app",
         "collector_url": "localhost:4317",
         "insecure": true
     },
