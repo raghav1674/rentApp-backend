@@ -75,8 +75,11 @@ func main() {
 	rentRecordService := services.NewRentRecordService(rentRecordRepo, rentRepo, userRepo)
 	rentRecordController := controllers.NewRentRecordController(rentRecordService)
 
+	// Initialize the health controller
+	healthController := controllers.NewHealthController()
+
 	// Set up router with all routes
-	r := routes.SetupRouter(userController, authController, rentController, rentRecordController, jwtService)
+	r := routes.SetupRouter(healthController,userController, authController, rentController, rentRecordController, jwtService)
 	// Start the server
 	r.Run(":8080")
 }

@@ -11,6 +11,7 @@ import (
 )
 
 func SetupRouter(
+	healthController controllers.HealthController,
 	userController controllers.UserController,
 	authController controllers.AuthController,
 	rentController controllers.RentController,
@@ -21,9 +22,12 @@ func SetupRouter(
 	router.Use(otelgin.Middleware("sample-web"))
 	router.Use(middlewares.ErrorHandler())
 
+
+
 	api := router.Group("/api/v1")
 	{
-
+		api.GET("/health", healthController.GetHealth)
+		
 		authRoutes := api.Group("/auth")
 		{
 			authRoutes.POST("/otp/generate", authController.GenerateOTP)
