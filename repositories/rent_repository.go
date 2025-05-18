@@ -16,7 +16,7 @@ type RentRepository interface {
 	CreateRent(ctx context.Context, rent models.Rent) (models.Rent, error)
 	FindRentById(ctx context.Context, userId string, rentId string) (models.Rent, error)
 	GetAllRents(ctx context.Context, userId string, userRole models.UserRole) ([]models.Rent, error)
-	UpdateRent(ctx context.Context,  userId string, rent models.Rent) (models.Rent, error)
+	UpdateRent(ctx context.Context, userId string, rent models.Rent) (models.Rent, error)
 }
 
 type rentRepository struct {
@@ -57,7 +57,7 @@ func (rentRepository *rentRepository) CreateRent(ctx context.Context, rent model
 	return rentRepository.FindRentById(ctx, rent.LandLord.Id.Hex(), id)
 }
 
-func (rentRepository *rentRepository) FindRentById(ctx context.Context, userId string,rentId string) (models.Rent, error) {
+func (rentRepository *rentRepository) FindRentById(ctx context.Context, userId string, rentId string) (models.Rent, error) {
 
 	log := utils.GetLogger()
 	_, span := log.Tracer().Start(ctx, "RentRepository.FindRentById")
@@ -105,7 +105,7 @@ func (rentRepository *rentRepository) FindRentById(ctx context.Context, userId s
 	return rent, nil
 }
 
-func (rentRepository *rentRepository) GetAllRents(ctx context.Context, userId string,userRole models.UserRole) ([]models.Rent, error) {
+func (rentRepository *rentRepository) GetAllRents(ctx context.Context, userId string, userRole models.UserRole) ([]models.Rent, error) {
 
 	log := utils.GetLogger()
 
@@ -154,7 +154,7 @@ func (rentRepository *rentRepository) GetAllRents(ctx context.Context, userId st
 	return rents, nil
 }
 
-func (rentRepository *rentRepository) UpdateRent(ctx context.Context,userId string, rent models.Rent) (models.Rent, error) {
+func (rentRepository *rentRepository) UpdateRent(ctx context.Context, userId string, rent models.Rent) (models.Rent, error) {
 
 	_, span := utils.Tracer().Start(ctx, "RentRepository.UpdateRent")
 	defer span.End()
@@ -180,7 +180,7 @@ func (rentRepository *rentRepository) UpdateRent(ctx context.Context,userId stri
 	}
 
 	query := bson.M{
-		"_id": rentObjectId,
+		"_id":          rentObjectId,
 		"landlord._id": userObjectId,
 	}
 

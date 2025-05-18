@@ -13,6 +13,7 @@ type Config struct {
 	Tracing TracingConfig `json:"tracing"`
 	Twilio  TwilioConfig  `json:"twilio"`
 	Redis   RedisConfig   `json:"redis"`
+	CORS   CORSConfig   `json:"cors"`
 }
 
 func LoadConfig(configPath string) (*Config, error) {
@@ -50,6 +51,10 @@ func LoadConfig(configPath string) (*Config, error) {
 	}
 
 	if err := cfg.Redis.LoadAndValidate(); err != nil {
+		return nil, err
+	}
+
+	if err := cfg.CORS.LoadAndValidate(); err != nil {
 		return nil, err
 	}
 
@@ -102,4 +107,12 @@ func (config *Config) GetEnvironment() string {
 		panic("Config not loaded. Call LoadConfig() first.")
 	}
 	return config.Env
+}
+
+// GetCORSConfig returns the CORS configuration
+func (config *Config) GetCORSConfig() CORSConfig {
+	if config == nil {
+		panic("Config not loaded. Call LoadConfig() first.")
+	}
+	return config.CORS
 }

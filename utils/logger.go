@@ -98,7 +98,7 @@ func (l *logrusWrapper) logWithTrace(ctx context.Context, level logrus.Level, ar
 				attribute.String("log.message", msg),
 			))
 		}
-		
+
 	} else {
 		l.logger.Log(level, msg)
 	}

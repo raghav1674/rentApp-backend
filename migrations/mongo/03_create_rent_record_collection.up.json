@@ -4,10 +4,39 @@
         "indexes": [
             {
                 "key": {
-                    "rent_id": 1,
+                    "rent_id": 1
+                },
+                "name": "rent_id"
+            },
+            {
+                "key": {
+                    "landlord._id": 1
+                },
+                "name": "landlord_id"
+            },
+            {
+                "key": {
+                    "tenant._id": 1
+                },
+                "name": "tenant_id"
+            },
+            {
+                "key": {
                     "status": 1
                 },
-                "name": "rent_id_rent_record_status"
+                "name": "status"
+            },
+            {
+                "key": {
+                    "approved_at": -1
+                },
+                "name": "approved_at_asc"
+            },
+            {
+                "key": {
+                    "submitted_at": -1
+                },
+                "name": "submitted_at_asc"
             },
             {
                 "key": {

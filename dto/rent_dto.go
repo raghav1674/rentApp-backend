@@ -16,10 +16,9 @@ type RentRequest struct {
 	EndDate           string  `json:"end_date" binding:"required"`
 }
 
-
 type RentUpdateRequest struct {
-	Title             string  `json:"title" binding:"required"`
-	Amount            float64 `json:"amount" binding:"required"`
-	Schedule          string  `json:"schedule" binding:"required,oneof=weekly monthly querterly"`
-	EndDate           string  `json:"end_date" binding:"required"`
+	Title    string  `json:"title" binding:"required"`
+	Amount   float64 `json:"amount" binding:"required"`
+	Schedule string  `json:"schedule" binding:"required,oneof=weekly monthly querterly"`
+	EndDate  string  `json:"end_date" binding:"required"`
 }

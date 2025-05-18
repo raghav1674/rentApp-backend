@@ -86,4 +86,6 @@ type RentRecord struct {
 	Status      RentRecordStatus `bson:"status" json:"status"`
 	CreatedAt   time.Time        `bson:"created_at" json:"created_at"`
 	UpdatedAt   time.Time        `bson:"updated_at" json:"updated_at"`
+	LandLord    PersonRef        `bson:"landlord" json:"landlord"`
+	Tenant      PersonRef        `bson:"tenant" json:"tenant"`
 }

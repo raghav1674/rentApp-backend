@@ -53,10 +53,11 @@ func SetupRouter(
 			}
 			rentRecordRoutes := protectedRoutes.Group("/rents/:rent_id/records")
 			{
-				rentRecordRoutes.POST("",tenantCheckMiddleWare, rentRecordController.CreateRentRecord)
+				rentRecordRoutes.POST("", tenantCheckMiddleWare, rentRecordController.CreateRentRecord)
 				rentRecordRoutes.GET("", rentRecordController.GetAllRentRecords)
 				rentRecordRoutes.GET("/:record_id", rentRecordController.GetRentRecordById)
-				rentRecordRoutes.POST("/:record_id/approve", landLordCheckMiddleWare, rentRecordController.ApproveRentRecord)				
+				rentRecordRoutes.POST("/:record_id/approve", landLordCheckMiddleWare, rentRecordController.ApproveRentRecord)
+				rentRecordRoutes.POST("/:record_id/reject", landLordCheckMiddleWare, rentRecordController.RejectRentRecord)
 			}
 		}
 	}

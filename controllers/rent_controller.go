@@ -113,7 +113,6 @@ func (r *rentController) GetRentById(ctx *gin.Context) {
 		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "User ID is empty", nil))
 	}
 
-
 	// Get the rent ID from the URL parameters
 	rentId := ctx.Param("rent_id")
 	if rentId == "" {
@@ -123,7 +122,7 @@ func (r *rentController) GetRentById(ctx *gin.Context) {
 	}
 
 	// Call the service to get the rent by ID
-	rent, err := r.rentService.GetRentById(spanCtx,userId.(string), rentId)
+	rent, err := r.rentService.GetRentById(spanCtx, userId.(string), rentId)
 	if err != nil {
 		log.Error(spanCtx, fmt.Sprintf("Failed to get rent with %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "Failed to get rent", err))
@@ -167,7 +166,7 @@ func (r *rentController) UpdateRent(ctx *gin.Context) {
 	}
 
 	// Call the service to update the rent
-	rent, err := r.rentService.UpdateRent(spanCtx,landLordId.(string), rentId, rentUpdateRequest)
+	rent, err := r.rentService.UpdateRent(spanCtx, landLordId.(string), rentId, rentUpdateRequest)
 	if err != nil {
 		log.Error(spanCtx, fmt.Sprintf("Failed to update rent with %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "Failed to update rent", err))
@@ -194,7 +193,6 @@ func (r *rentController) CloseRent(ctx *gin.Context) {
 		ctx.Error(customerr.NewAppError(http.StatusBadRequest, "Landlord ID is empty", nil))
 	}
 
-
 	// Get the rent ID from the URL parameters
 	rentId := ctx.Param("rent_id")
 	if rentId == "" {
@@ -204,7 +202,7 @@ func (r *rentController) CloseRent(ctx *gin.Context) {
 	}
 
 	// Call the service to close the rent
-	rent, err := r.rentService.CloseRent(spanCtx,landLordId.(string), rentId)
+	rent, err := r.rentService.CloseRent(spanCtx, landLordId.(string), rentId)
 	if err != nil {
 		log.Error(spanCtx, fmt.Sprintf("Failed to close rent with %s", err.Error()))
 		ctx.Error(customerr.NewAppError(http.StatusInternalServerError, "Failed to close rent", err))

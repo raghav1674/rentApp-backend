@@ -4,17 +4,33 @@
         "indexes": [
             {
                 "key": {
-                    "landlord.id": 1,
-                    "status": 1
+                    "landlord._id": 1
                 },
-                "name": "landlord_id_rent_status"
+                "name": "landlord_id"
             },
             {
                 "key": {
-                    "tenant.id": 1,
+                    "tenant._id": 1
+                },
+                "name": "tenant_id"
+            },
+            {
+                "key": {
                     "status": 1
                 },
-                "name": "tenant_id_rent_status"
+                "name": "status"
+            },
+            {
+                "key": {
+                    "start_date": 1
+                },
+                "name": "start_date"
+            },
+            {
+                "key": {
+                    "end_date": 1
+                },
+                "name": "end_date"
             },
             {
                 "key": {

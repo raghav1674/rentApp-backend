@@ -16,7 +16,7 @@ type RentService interface {
 	GetAllRents(ctx context.Context, userId string, userRole string) (dto.RentResponse, error)
 	GetRentById(ctx context.Context, userId string, rentId string) (dto.RentResponse, error)
 	UpdateRent(ctx context.Context, landLordId string, rentId string, rentRequest dto.RentUpdateRequest) (dto.RentResponse, error)
-	CloseRent(ctx context.Context, landLordId string,rentId string) (dto.RentResponse, error)
+	CloseRent(ctx context.Context, landLordId string, rentId string) (dto.RentResponse, error)
 }
 
 type rentService struct {
@@ -66,12 +66,12 @@ func (r *rentService) CreateRent(ctx context.Context, landLordId string, rentReq
 
 	now := time.Now()
 
-	startDate,err := time.Parse( "2006-01-02",rentRequest.StartDate)
+	startDate, err := time.Parse("2006-01-02", rentRequest.StartDate)
 	if err != nil {
 		log.Error(spanCtx, "Failed to parse start date with %s", err.Error())
 		return dto.RentResponse{}, errors.New("failed to parse start date")
 	}
-	endDate,err := time.Parse( "2006-01-02",rentRequest.EndDate)
+	endDate, err := time.Parse("2006-01-02", rentRequest.EndDate)
 	if err != nil {
 		log.Error(spanCtx, "Failed to parse end date with %s", err.Error())
 		return dto.RentResponse{}, errors.New("failed to parse end date")
@@ -83,26 +83,25 @@ func (r *rentService) CreateRent(ctx context.Context, landLordId string, rentReq
 	}
 
 	switch models.RentSchedule(rentRequest.Schedule) {
-		case models.RentScheduleWeekly:
-			if endDate.Sub(startDate).Hours() < 168 || endDate.Sub(startDate).Hours() > 672 {
-				log.Error(spanCtx, "Weekly rent must be at least 7 days and at most 28 days")
-				return dto.RentResponse{}, errors.New("weekly rent must be at least 7 days and at most 28 days")
-			}
-		case models.RentScheduleMonthly:
-			if endDate.Sub(startDate).Hours() < 672 || endDate.Sub(startDate).Hours() > 2016 {
-				log.Error(spanCtx, "Monthly rent must be at least 28 days and at most 84 days")
-				return dto.RentResponse{}, errors.New("monthly rent must be at least 28 days and at most 84 days")
-			}			
-		case models.RentScheduleQuarterly:
-			if endDate.Sub(startDate).Hours() < 2016 || endDate.Sub(startDate).Hours() > 6720 {
-				log.Error(spanCtx, "Quarterly rent must be at least 84 days and at most 280 days")
-				return dto.RentResponse{}, errors.New("quarterly rent must be at least 84 days and at most 280 days")
-			}
-		default:
-			log.Error(spanCtx, "Invalid rent schedule")
-			return dto.RentResponse{}, errors.New("invalid rent schedule")
+	case models.RentScheduleWeekly:
+		if endDate.Sub(startDate).Hours() < 168 || endDate.Sub(startDate).Hours() > 672 {
+			log.Error(spanCtx, "Weekly rent must be at least 7 days and at most 28 days")
+			return dto.RentResponse{}, errors.New("weekly rent must be at least 7 days and at most 28 days")
+		}
+	case models.RentScheduleMonthly:
+		if endDate.Sub(startDate).Hours() < 672 || endDate.Sub(startDate).Hours() > 2016 {
+			log.Error(spanCtx, "Monthly rent must be at least 28 days and at most 84 days")
+			return dto.RentResponse{}, errors.New("monthly rent must be at least 28 days and at most 84 days")
+		}
+	case models.RentScheduleQuarterly:
+		if endDate.Sub(startDate).Hours() < 2016 || endDate.Sub(startDate).Hours() > 6720 {
+			log.Error(spanCtx, "Quarterly rent must be at least 84 days and at most 280 days")
+			return dto.RentResponse{}, errors.New("quarterly rent must be at least 84 days and at most 280 days")
+		}
+	default:
+		log.Error(spanCtx, "Invalid rent schedule")
+		return dto.RentResponse{}, errors.New("invalid rent schedule")
 	}
-
 
 	rent := models.Rent{
 		LandLord: models.PersonRef{
@@ -159,7 +158,7 @@ func (r *rentService) GetRentById(ctx context.Context, userId string, rentId str
 
 	log.Info(spanCtx, "Rent ID: %s", rentId)
 
-	rent, err := r.rentRepo.FindRentById(spanCtx,userId,rentId)
+	rent, err := r.rentRepo.FindRentById(spanCtx, userId, rentId)
 	if err != nil {
 		log.Error(spanCtx, "Failed to find rent with %s", err.Error())
 		return dto.RentResponse{}, err
@@ -236,7 +235,7 @@ func (r *rentService) UpdateRent(ctx context.Context, landLordId, rentId string,
 // CloseRent implements RentService.
 func (r *rentService) CloseRent(ctx context.Context, landLordId, rentId string) (dto.RentResponse, error) {
 
-	rent, err := r.rentRepo.FindRentById(ctx, landLordId,rentId)
+	rent, err := r.rentRepo.FindRentById(ctx, landLordId, rentId)
 	if err != nil {
 		return dto.RentResponse{}, err
 	}

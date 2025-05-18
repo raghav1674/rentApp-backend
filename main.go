@@ -72,11 +72,11 @@ func main() {
 
 	// initialize rent record	repository, service, and controller
 	rentRecordRepo := repositories.NewRentRecordRepository(mongoClient.Database)
-	rentRecordService := services.NewRentRecordService(rentRecordRepo, userRepo)
+	rentRecordService := services.NewRentRecordService(rentRecordRepo, rentRepo, userRepo)
 	rentRecordController := controllers.NewRentRecordController(rentRecordService)
 
 	// Set up router with all routes
-	r := routes.SetupRouter(userController, authController, rentController, rentRecordController,jwtService)
+	r := routes.SetupRouter(userController, authController, rentController, rentRecordController, jwtService)
 	// Start the server
 	r.Run(":8080")
 }
